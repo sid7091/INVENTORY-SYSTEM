@@ -1,0 +1,298 @@
+# Instincts generated from https://github.com/sid7091/INVENTORY-SYSTEM
+# Generated: 2026-07-13T08:40:38.680Z
+# Version: 2.0
+# NOTE: This file supplements (does not replace) any existing curated instincts.
+# High-confidence manually curated instincts should be preserved alongside these.
+
+---
+id: INVENTORY-SYSTEM-commit-length
+trigger: "when writing a commit message"
+confidence: 0.6
+domain: git
+source: repo-analysis
+source_repo: https://github.com/sid7091/INVENTORY-SYSTEM
+---
+
+# INVENTORY SYSTEM Commit Length
+
+## Action
+
+Keep commit messages concise (~46 characters)
+
+## Evidence
+
+- Average commit message length: 46 chars
+- Based on 1 commits
+
+---
+id: INVENTORY-SYSTEM-naming-files
+trigger: "when creating a new file"
+confidence: 0.8
+domain: code-style
+source: repo-analysis
+source_repo: https://github.com/sid7091/INVENTORY-SYSTEM
+---
+
+# INVENTORY SYSTEM Naming Files
+
+## Action
+
+Use camelCase naming convention
+
+## Evidence
+
+- Analyzed file naming patterns in repository
+- Dominant pattern: camelCase
+
+---
+id: INVENTORY-SYSTEM-import-alias
+trigger: "when importing modules"
+confidence: 0.85
+domain: code-style
+source: repo-analysis
+source_repo: https://github.com/sid7091/INVENTORY-SYSTEM
+---
+
+# INVENTORY SYSTEM Import Alias
+
+## Action
+
+Use path aliases (@/, ~/) instead of relative imports
+
+## Evidence
+
+- Import analysis shows alias pattern
+- Example: import { x } from '@/lib/x'
+
+---
+id: INVENTORY-SYSTEM-export-style
+trigger: "when exporting from a module"
+confidence: 0.7
+domain: code-style
+source: repo-analysis
+source_repo: https://github.com/sid7091/INVENTORY-SYSTEM
+---
+
+# INVENTORY SYSTEM Export Style
+
+## Action
+
+Prefer default exports
+
+## Evidence
+
+- Export pattern analysis
+- Dominant style: default
+
+---
+id: INVENTORY-SYSTEM-arch-type-based
+trigger: "when adding new code"
+confidence: 0.8
+domain: architecture
+source: repo-analysis
+source_repo: https://github.com/sid7091/INVENTORY-SYSTEM
+---
+
+# INVENTORY SYSTEM Arch Type Based
+
+## Action
+
+Place code in the appropriate type folder (components/, services/, utils/, etc.)
+
+## Evidence
+
+- Type-based module organization detected
+- Folders: app, components, lib
+
+---
+id: INVENTORY-SYSTEM-test-separate
+trigger: "when writing tests"
+confidence: 0.8
+domain: testing
+source: repo-analysis
+source_repo: https://github.com/sid7091/INVENTORY-SYSTEM
+---
+
+# INVENTORY SYSTEM Test Separate
+
+## Action
+
+Place tests in the tests/ or __tests__/ directory, mirroring src structure
+
+## Evidence
+
+- Separate test directory pattern detected
+- Tests live in dedicated test folders
+
+---
+id: inventory-system-instinct-file-naming
+trigger: "When creating a new file"
+confidence: 0.9
+domain: code-style
+source: repo-analysis
+source_repo: sid7091/INVENTORY-SYSTEM
+---
+
+# Inventory System Instinct File Naming
+
+## Action
+
+Name the file using camelCase
+
+## Evidence
+
+- Pattern in namingConventions.files
+
+---
+id: inventory-system-instinct-function-naming
+trigger: "When defining a new function"
+confidence: 0.9
+domain: code-style
+source: repo-analysis
+source_repo: sid7091/INVENTORY-SYSTEM
+---
+
+# Inventory System Instinct Function Naming
+
+## Action
+
+Name the function using camelCase
+
+## Evidence
+
+- Pattern in namingConventions.functions
+
+---
+id: inventory-system-instinct-class-naming
+trigger: "When defining a new class"
+confidence: 0.9
+domain: code-style
+source: repo-analysis
+source_repo: sid7091/INVENTORY-SYSTEM
+---
+
+# Inventory System Instinct Class Naming
+
+## Action
+
+Name the class using PascalCase
+
+## Evidence
+
+- Pattern in namingConventions.classes
+
+---
+id: inventory-system-instinct-constant-naming
+trigger: "When declaring a constant"
+confidence: 0.9
+domain: code-style
+source: repo-analysis
+source_repo: sid7091/INVENTORY-SYSTEM
+---
+
+# Inventory System Instinct Constant Naming
+
+## Action
+
+Name the constant using SCREAMING_SNAKE_CASE
+
+## Evidence
+
+- Pattern in namingConventions.constants
+
+---
+id: inventory-system-instinct-import-alias
+trigger: "When importing modules"
+confidence: 0.8
+domain: code-style
+source: repo-analysis
+source_repo: sid7091/INVENTORY-SYSTEM
+---
+
+# Inventory System Instinct Import Alias
+
+## Action
+
+Use alias import style
+
+## Evidence
+
+- Pattern in importStyle
+
+---
+id: inventory-system-instinct-export-default
+trigger: "When exporting modules or components"
+confidence: 0.8
+domain: code-style
+source: repo-analysis
+source_repo: sid7091/INVENTORY-SYSTEM
+---
+
+# Inventory System Instinct Export Default
+
+## Action
+
+Use default export style
+
+## Evidence
+
+- Pattern in exportStyle
+
+---
+id: inventory-system-instinct-try-catch-errors
+trigger: "When handling errors in code"
+confidence: 0.9
+domain: code-style
+source: repo-analysis
+source_repo: sid7091/INVENTORY-SYSTEM
+---
+
+# Inventory System Instinct Try Catch Errors
+
+## Action
+
+Use try-catch blocks for error handling
+
+## Evidence
+
+- Pattern in errorHandling.style
+
+---
+id: inventory-system-instinct-test-location
+trigger: "When adding new tests"
+confidence: 0.8
+domain: testing
+source: repo-analysis
+source_repo: sid7091/INVENTORY-SYSTEM
+---
+
+# Inventory System Instinct Test Location
+
+## Action
+
+Place test files in a separate location from source files
+
+## Evidence
+
+- Pattern in architecture.folderStructure.testLocation
+
+---
+id: inventory-system-instinct-commit-freeform
+trigger: "When writing a git commit message"
+confidence: 0.8
+domain: git
+source: repo-analysis
+source_repo: sid7091/INVENTORY-SYSTEM
+---
+
+# Inventory System Instinct Commit Freeform
+
+## Action
+
+Use a freeform message without a prefix
+
+## Evidence
+
+- Pattern in commits.type
+- Example: 'Build Helios Phase 1 block-level inventory app'
+
