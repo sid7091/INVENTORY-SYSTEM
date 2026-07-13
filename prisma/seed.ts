@@ -1,0 +1,87 @@
+import { PrismaClient } from "@prisma/client";
+import bcrypt from "bcryptjs";
+import { promises as fs } from "fs";
+import path from "path";
+import { parseWorkbook } from "../src/lib/excel";
+
+const prisma = new PrismaClient();
+
+async function main() {
+  const email = (process.env.SEED_ADMIN_EMAIL || "admin@heliosstones.com").toLowerCase();
+  const password = process.env.SEED_ADMIN_PASSWORD || "helios123";
+
+  const passwordHash = await bcrypt.hash(password, 10);
+  const admin = await prisma.user.upsert({
+    where: { email },
+    update: {},
+    create: { email, name: "Helios Admin", passwordHash, role: "ADMIN" },
+  });
+  console.log(`✔ Admin user ready: ${email}`);
+
+  // Also seed a plain staff user for demoing roles.
+  const staffEmail = "staff@heliosstones.com";
+  await prisma.user.upsert({
+    where: { email: staffEmail },
+    update: {},
+    create: {
+      email: staffEmail,
+      name: "Warehouse Staff",
+      passwordHash: await bcrypt.hash("helios123", 10),
+      role: "STAFF",
+    },
+  });
+  console.log(`✔ Staff user ready: ${staffEmail}`);
+
+  // Optionally import the sample spreadsheet if the DB has no blocks yet.
+  const existing = await prisma.block.count();
+  if (existing > 0) {
+    console.log(`ℹ Blocks already present (${existing}); skipping sample import.`);
+    return;
+  }
+
+  const samplePath = path.join(process.cwd(), "data", "Ready_to_dispatch.xlsx");
+  try {
+    const buf = await fs.readFile(samplePath);
+    const { rows, errors } = parseWorkbook(buf);
+    console.log(`ℹ Parsed ${rows.length} rows from sample (${errors.length} validation notes).`);
+
+    let created = 0;
+    for (const r of rows) {
+      // Blocks flagged "PHOTOS PENDING" start in the photo gate; everything
+      // else that already lives on the ready-to-dispatch list is IN_STOCK.
+      const status = r.category === "PHOTOS_PENDING" ? "NEEDS_PHOTOS" : "IN_STOCK";
+      await prisma.block.create({
+        data: {
+          blockNo: r.blockNo,
+          quarryNo: r.quarryNo,
+          colour: r.colour,
+          exporter: r.exporter,
+          quarry: r.quarry,
+          weightTons: r.weightTons,
+          lengthCm: r.lengthCm,
+          heightCm: r.heightCm,
+          pcs: r.pcs,
+          endPcs: r.endPcs,
+          totalSft: r.totalSft,
+          thicknessMm: r.thicknessMm,
+          category: r.category,
+          status,
+        },
+      });
+      created++;
+    }
+    await prisma.auditLog.create({
+      data: { action: "IMPORT", userId: admin.id, reason: `Seed import of ${created} blocks from Ready_to_dispatch.xlsx` },
+    });
+    console.log(`✔ Imported ${created} sample blocks.`);
+  } catch (e) {
+    console.log(`ℹ No sample spreadsheet imported (${(e as Error).message}).`);
+  }
+}
+
+main()
+  .catch((e) => {
+    console.error(e);
+    process.exit(1);
+  })
+  .finally(() => prisma.$disconnect());

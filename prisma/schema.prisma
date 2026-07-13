@@ -1,0 +1,159 @@
+// Helios Stones — Phase 1 inventory data model (block-level tracking).
+// SQLite keeps Phase 1 zero-config; the schema is written to port cleanly to
+// Postgres later (enums are modelled as validated strings so SQLite is happy).
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// ---------------------------------------------------------------------------
+// Staff / auth
+// ---------------------------------------------------------------------------
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  name         String
+  passwordHash String
+  role         String   @default("STAFF") // STAFF | ADMIN
+  active       Boolean  @default(true)
+  createdAt    DateTime @default(now())
+
+  auditLogs    AuditLog[]
+  photoBatches PhotoBatch[]
+}
+
+// ---------------------------------------------------------------------------
+// Blocks — the core inventory unit
+// ---------------------------------------------------------------------------
+
+model Block {
+  id String @id @default(cuid())
+
+  // Identity (matches Ready_to_dispatch.xlsx column layout)
+  blockNo   String  @unique // e.g. ANW-M543
+  quarryNo  String? // e.g. HSS-105
+  colour    String // COLOUR / variety
+  exporter  String? // EXPORTER NAME
+  quarry    String? // QUARRY NAME (source quarry site)
+  warehouse String? // physical warehouse / yard location
+
+  // Measurements
+  weightTons  Float? // WEIGHT (Tons)
+  lengthCm    Float? // Length (CM)
+  heightCm    Float? // Height (CM)
+  pcs         Int? // PCS (slab count)
+  endPcs      Int? // END PCS
+  totalSft    Float? // Total Quantity (SFT)
+  thicknessMm Float? // normalised thickness in millimetres (e.g. 18)
+
+  // Business classification (last spreadsheet column) + workflow status
+  category String @default("HELIOS_LISTED") // see CATEGORY constants
+  status   String @default("NEEDS_PHOTOS") // NEEDS_PHOTOS | IN_STOCK | RESERVED | SOLD | DAMAGED | RETURNED
+
+  // Bulletproofing
+  version   Int       @default(1) // optimistic concurrency token
+  deletedAt DateTime? // soft delete (30-day trash)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  slabs     Slab[]
+  photos    Photo[]
+  auditLogs AuditLog[]
+
+  @@index([status])
+  @@index([colour])
+  @@index([exporter])
+  @@index([quarry])
+  @@index([deletedAt])
+}
+
+// Optional per-slab child records for premium blocks
+model Slab {
+  id          String   @id @default(cuid())
+  blockId     String
+  block       Block    @relation(fields: [blockId], references: [id], onDelete: Cascade)
+  slabNo      String // label within the block, e.g. "01"
+  lengthCm    Float?
+  heightCm    Float?
+  thicknessMm Float?
+  sft         Float?
+  status      String   @default("IN_STOCK")
+  notes       String?
+  createdAt   DateTime @default(now())
+
+  @@unique([blockId, slabNo])
+  @@index([blockId])
+}
+
+// ---------------------------------------------------------------------------
+// Photos + the photo gate
+// ---------------------------------------------------------------------------
+
+model Photo {
+  id        String   @id @default(cuid())
+  blockId   String
+  block     Block    @relation(fields: [blockId], references: [id], onDelete: Cascade)
+  url       String // public path, e.g. /uploads/xxx.jpg
+  filename  String // original filename
+  isPrimary Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@index([blockId])
+}
+
+// ---------------------------------------------------------------------------
+// Bulk Photo Upload Room — nothing commits until approved
+// ---------------------------------------------------------------------------
+
+model PhotoBatch {
+  id        String   @id @default(cuid())
+  createdBy String
+  user      User     @relation(fields: [createdBy], references: [id])
+  status    String   @default("REVIEW") // REVIEW | COMMITTED | DISCARDED
+  createdAt DateTime @default(now())
+
+  items PhotoBatchItem[]
+}
+
+model PhotoBatchItem {
+  id           String   @id @default(cuid())
+  batchId      String
+  batch        PhotoBatch @relation(fields: [batchId], references: [id], onDelete: Cascade)
+  filename     String // original filename
+  tempUrl      String // staged file path in /uploads/_staging
+  // Auto-match result
+  guessBlockNo String? // block number parsed from the filename
+  matchedBlockId String? // resolved Block id, if any
+  // Reviewer decision: PENDING | APPROVE | SKIP | REJECT | REASSIGN
+  decision     String   @default("PENDING")
+  createdAt    DateTime @default(now())
+
+  @@index([batchId])
+}
+
+// ---------------------------------------------------------------------------
+// Audit log — who / when / what / why on every change
+// ---------------------------------------------------------------------------
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  blockId   String? // null for non-block events (login, import, etc.)
+  block     Block?   @relation(fields: [blockId], references: [id], onDelete: SetNull)
+  userId    String?
+  user      User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  action    String // CREATE | UPDATE | STATUS_CHANGE | DELETE | RESTORE | PHOTO_ADD | IMPORT | ...
+  reason    String? // mandatory for status changes
+  // JSON string snapshot of what changed { field: {from, to} }
+  changes   String?
+  createdAt DateTime @default(now())
+
+  @@index([blockId])
+  @@index([createdAt])
+}
