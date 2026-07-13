@@ -1,7 +1,7 @@
 "use client";
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import { useCallback } from "react";
-import { STATUS_LABELS, CATEGORY_LABELS, type Status, type Category } from "@/lib/constants";
+import { STATUS_LABELS, CATEGORY_LABELS, ASSIGNABLE_STATUSES, type Category } from "@/lib/constants";
 
 interface Options {
   colours: string[];
@@ -70,7 +70,7 @@ export function Filters({ options, showStatus = true }: { options: Options; show
       {showStatus && (
         <select className="input w-auto" value={get("status")} onChange={(e) => setParam("status", e.target.value)}>
           <option value="">All statuses</option>
-          {(["IN_STOCK", "RESERVED", "SOLD", "DAMAGED", "RETURNED"] as Status[]).map((s) => (
+          {ASSIGNABLE_STATUSES.map((s) => (
             <option key={s} value={s}>{STATUS_LABELS[s]}</option>
           ))}
         </select>

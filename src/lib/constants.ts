@@ -6,20 +6,20 @@
 export const STATUSES = [
   "NEEDS_PHOTOS",
   "IN_STOCK",
-  "RESERVED",
+  "READY_TO_DISPATCH",
+  "HOLD",
+  "PARTIALLY_SOLD",
   "SOLD",
-  "DAMAGED",
-  "RETURNED",
 ] as const;
 export type Status = (typeof STATUSES)[number];
 
 export const STATUS_LABELS: Record<Status, string> = {
   NEEDS_PHOTOS: "Needs Photos",
   IN_STOCK: "In Stock",
-  RESERVED: "Reserved",
+  READY_TO_DISPATCH: "Ready to Dispatch",
+  HOLD: "Hold",
+  PARTIALLY_SOLD: "Partially Sold",
   SOLD: "Sold",
-  DAMAGED: "Damaged",
-  RETURNED: "Returned",
 };
 
 // Statuses a user may transition a block to from the status-change action.
@@ -27,14 +27,20 @@ export const STATUS_LABELS: Record<Status, string> = {
 // cleared automatically once a photo is attached (the photo gate).
 export const ASSIGNABLE_STATUSES: Status[] = [
   "IN_STOCK",
-  "RESERVED",
+  "READY_TO_DISPATCH",
+  "HOLD",
+  "PARTIALLY_SOLD",
   "SOLD",
-  "DAMAGED",
-  "RETURNED",
 ];
 
-// Statuses that count as "live" sellable inventory for reports.
-export const LIVE_STATUSES: Status[] = ["IN_STOCK", "RESERVED"];
+// Statuses that count as "live" inventory (still physically held) for reports.
+// SOLD is excluded; a partially-sold block still has stock remaining.
+export const LIVE_STATUSES: Status[] = [
+  "IN_STOCK",
+  "READY_TO_DISPATCH",
+  "HOLD",
+  "PARTIALLY_SOLD",
+];
 
 // -- Business category (last spreadsheet column) -----------------------------
 

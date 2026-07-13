@@ -54,7 +54,7 @@ model Block {
 
   // Business classification (last spreadsheet column) + workflow status
   category String @default("HELIOS_LISTED") // see CATEGORY constants
-  status   String @default("NEEDS_PHOTOS") // NEEDS_PHOTOS | IN_STOCK | RESERVED | SOLD | DAMAGED | RETURNED
+  status   String @default("NEEDS_PHOTOS") // NEEDS_PHOTOS | IN_STOCK | READY_TO_DISPATCH | HOLD | PARTIALLY_SOLD | SOLD
 
   // Bulletproofing
   version   Int       @default(1) // optimistic concurrency token

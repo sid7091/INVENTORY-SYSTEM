@@ -55,7 +55,7 @@ export function StatusChangeModal({ blockId, version, current }: { blockId: stri
               <div>
                 <label className="label">Reason <span className="text-status-damaged">*</span></label>
                 <textarea className="input min-h-[80px]" value={reason} onChange={(e) => setReason(e.target.value)}
-                  placeholder="e.g. Reserved for order #1043 (client GALATA)" />
+                  placeholder="e.g. On hold for order #1043 (client GALATA)" />
               </div>
               {error && <p className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
             </div>

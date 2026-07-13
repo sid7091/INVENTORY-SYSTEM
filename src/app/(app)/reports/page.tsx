@@ -59,7 +59,7 @@ export default async function ReportsPage() {
 
   return (
     <div>
-      <PageHeader title="Reports" subtitle="Live inventory = In Stock + Reserved" />
+      <PageHeader title="Reports" subtitle="Live inventory = In Stock + Ready to Dispatch + Hold + Partially Sold" />
       <div className="grid gap-6 p-6 lg:grid-cols-2">
         <Section title="Photo backlog" subtitle="Blocks still in the photo gate">
           <div className="flex items-center gap-4">
