@@ -49,7 +49,7 @@ export function BlockGrid({ blocks }: { blocks: BlockRow[] }) {
             <div className="mt-1 text-xs text-brown-400">{b.exporter ?? "—"}</div>
             <div className="mt-2 flex flex-wrap gap-x-3 gap-y-0.5 text-xs text-brown-500">
               <span>{formatThickness(b.thicknessMm)}</span>
-              <span>{b.pcs != null ? `${b.pcs} pcs` : "—"}</span>
+              <span>{b.pcs != null ? `${b.pcs} slabs` : "—"}</span>
               <span>{formatSft(b.totalSft)}</span>
             </div>
           </div>
@@ -71,7 +71,7 @@ export function BlockTable({ blocks }: { blocks: BlockRow[] }) {
             <th className="th">Exporter</th>
             <th className="th">Quarry</th>
             <th className="th">Thickness</th>
-            <th className="th">PCS</th>
+            <th className="th">Slabs</th>
             <th className="th">Weight</th>
             <th className="th">SFT</th>
             <th className="th">Status</th>

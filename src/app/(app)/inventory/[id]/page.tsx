@@ -9,6 +9,7 @@ import { PhotoUploader } from "@/components/PhotoUploader";
 import { HistoryTimeline } from "@/components/HistoryTimeline";
 import { formatNumber, formatSft } from "@/lib/utils";
 import { formatThickness, CATEGORY_LABELS, type Category } from "@/lib/constants";
+import { summarize, formatRanges } from "@/lib/pieces";
 
 export const dynamic = "force-dynamic";
 
@@ -28,12 +29,16 @@ export default async function BlockDetailPage({ params }: { params: Promise<{ id
     include: {
       photos: { orderBy: [{ isPrimary: "desc" }, { createdAt: "asc" }] },
       slabs: { orderBy: { slabNo: "asc" } },
+      allocations: { orderBy: { fromPiece: "asc" } },
       auditLogs: { orderBy: { createdAt: "desc" }, include: { user: { select: { name: true } } } },
     },
   });
   if (!block || block.deletedAt) notFound();
 
   const gated = block.status === "NEEDS_PHOTOS";
+  const total = block.pcs ?? 0;
+  const summary = summarize(total, block.allocations);
+  const hasAllocations = block.allocations.length > 0;
 
   return (
     <div>
@@ -42,7 +47,8 @@ export default async function BlockDetailPage({ params }: { params: Promise<{ id
         subtitle={`${block.colour} · v${block.version}`}
         actions={
           <>
-            <StatusChangeModal blockId={block.id} version={block.version} current={block.status} />
+            <StatusChangeModal blockId={block.id} version={block.version} current={block.status}
+              pcs={block.pcs} availableLabel={total > 0 ? formatRanges(summary.availableRanges) : "—"} />
             <Link href={`/inventory/${block.id}/edit`} className="btn-secondary text-sm">Edit</Link>
             <DeleteBlockButton blockId={block.id} blockNo={block.blockNo} />
           </>
@@ -68,11 +74,39 @@ export default async function BlockDetailPage({ params }: { params: Promise<{ id
               <Spec label="Length" value={block.lengthCm != null ? `${formatNumber(block.lengthCm)} cm` : "—"} />
               <Spec label="Height" value={block.heightCm != null ? `${formatNumber(block.heightCm)} cm` : "—"} />
               <Spec label="Thickness" value={formatThickness(block.thicknessMm)} />
-              <Spec label="PCS" value={block.pcs ?? "—"} />
+              <Spec label="No. of slabs" value={block.pcs != null ? <>{block.pcs} <span className="text-brown-400">(pieces 1–{block.pcs})</span></> : "—"} />
               <Spec label="End PCS" value={block.endPcs ?? "—"} />
               <Spec label="Total SFT" value={formatSft(block.totalSft)} />
             </dl>
           </section>
+
+          {total > 0 && (
+            <section className="card p-5">
+              <h2 className="mb-3 font-serif text-base font-bold text-brown-800">Slab pieces ({total})</h2>
+              <div className="grid grid-cols-3 gap-3 text-center">
+                <div className="rounded-lg bg-emerald-50 p-3">
+                  <div className="text-xs font-semibold uppercase tracking-wide text-emerald-700">Available</div>
+                  <div className="mt-1 text-lg font-bold text-emerald-800">{summary.availableCount}</div>
+                  <div className="text-xs text-emerald-700">{formatRanges(summary.availableRanges)}</div>
+                </div>
+                <div className="rounded-lg bg-purple-50 p-3">
+                  <div className="text-xs font-semibold uppercase tracking-wide text-purple-700">Sold</div>
+                  <div className="mt-1 text-lg font-bold text-purple-800">{summary.soldCount}</div>
+                  <div className="text-xs text-purple-700">{formatRanges(summary.soldRanges)}</div>
+                </div>
+                <div className="rounded-lg bg-yellow-50 p-3">
+                  <div className="text-xs font-semibold uppercase tracking-wide text-yellow-700">On hold</div>
+                  <div className="mt-1 text-lg font-bold text-yellow-800">{summary.heldCount}</div>
+                  <div className="text-xs text-yellow-700">{formatRanges(summary.heldRanges)}</div>
+                </div>
+              </div>
+              {hasAllocations && (
+                <p className="mt-3 text-xs text-brown-400">
+                  Use “Change status” → Partially Sold / Hold to record piece ranges; set the block back to In Stock to free all pieces.
+                </p>
+              )}
+            </section>
+          )}
 
           <section className="card p-5">
             <PhotoUploader blockId={block.id} photos={block.photos} gated={gated} />

@@ -38,6 +38,11 @@ export const statusChangeSchema = z.object({
     message: "That status cannot be set manually",
   }),
   reason: z.string().trim().min(3, "A reason is required for every status change"),
+  // Piece numbers/ranges (e.g. "20-30, 35") — used for Partially Sold and Hold.
+  pieces: z.preprocess(
+    (v) => (typeof v === "string" && v.trim() === "" ? undefined : v),
+    z.string().optional(),
+  ),
 });
 
 export const slabSchema = z.object({

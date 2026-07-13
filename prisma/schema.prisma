@@ -1,4 +1,4 @@
-// Helios Stones — Phase 1 inventory data model (block-level tracking).
+// Eagle Stone — Phase 1 inventory data model (block-level tracking).
 // SQLite keeps Phase 1 zero-config; the schema is written to port cleanly to
 // Postgres later (enums are modelled as validated strings so SQLite is happy).
 
@@ -63,15 +63,33 @@ model Block {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  slabs     Slab[]
-  photos    Photo[]
-  auditLogs AuditLog[]
+  slabs       Slab[]
+  photos      Photo[]
+  auditLogs   AuditLog[]
+  allocations PieceAllocation[]
 
   @@index([status])
   @@index([colour])
   @@index([exporter])
   @@index([quarry])
   @@index([deletedAt])
+}
+
+// Piece-level allocation: a contiguous range of slab pieces (1..pcs) that has
+// been SOLD or put on HOLD out of a block. Available pieces are the complement
+// of all allocations. Enables partial sales ("sold 20–30 of 46").
+model PieceAllocation {
+  id        String   @id @default(cuid())
+  blockId   String
+  block     Block    @relation(fields: [blockId], references: [id], onDelete: Cascade)
+  fromPiece Int
+  toPiece   Int
+  kind      String // SOLD | HOLD
+  reason    String?
+  createdBy String?
+  createdAt DateTime @default(now())
+
+  @@index([blockId])
 }
 
 // Optional per-slab child records for premium blocks

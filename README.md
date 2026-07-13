@@ -1,10 +1,10 @@
-# Helios Inventory — Phase 1
+# Eagle Stone Inventory — Phase 1
 
-Block-level marble & stone inventory for **Helios Stones**. A login-gated staff
+Block-level marble & stone inventory for **Eagle Stone**. A login-gated staff
 app built on **Next.js 15 (App Router) + TypeScript + Prisma**. Phase 1 is
 inventory only — no customer-facing features.
 
-The data model matches Helios's `Ready_to_dispatch.xlsx` exactly (block-level
+The data model matches Eagle Stone's `Ready_to_dispatch.xlsx` exactly (block-level
 tracking with optional per-slab child records for premium blocks).
 
 ## Features
@@ -39,7 +39,7 @@ npm run db:seed               # create admin + staff users and import the sample
 npm run dev                   # http://localhost:3000
 ```
 
-**Demo login:** `admin@heliosstones.com` / `helios123` (also `staff@heliosstones.com`).
+**Demo login:** `admin@eaglestone.com` / `helios123` (also `staff@eaglestone.com`).
 
 The seed imports `data/Ready_to_dispatch.xlsx` (224 real blocks). Two blocks
 tagged *Photos Pending* land in the photo gate to demonstrate the workflow.
@@ -61,7 +61,7 @@ Wire the backup script to cron (SQLite is a single file, so a copy is a
 consistent snapshot):
 
 ```cron
-0 2 * * *  cd /path/to/helios-inventory && npm run backup
+0 2 * * *  cd /path/to/eaglestone-inventory && npm run backup
 ```
 
 Admins can also download an on-demand snapshot from `GET /api/backup`.

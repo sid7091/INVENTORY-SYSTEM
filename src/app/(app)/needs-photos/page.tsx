@@ -30,7 +30,7 @@ export default async function NeedsPhotosPage() {
             <table className="min-w-full divide-y divide-cream-200">
               <thead className="bg-cream-100"><tr>
                 <th className="th">Block No</th><th className="th">Colour</th><th className="th">Exporter</th>
-                <th className="th">Thickness</th><th className="th">PCS</th><th className="th">SFT</th><th className="th">Added</th><th className="th"></th>
+                <th className="th">Thickness</th><th className="th">Slabs</th><th className="th">SFT</th><th className="th">Added</th><th className="th"></th>
               </tr></thead>
               <tbody className="divide-y divide-cream-100">
                 {blocks.map((b) => (

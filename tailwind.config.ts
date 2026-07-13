@@ -1,7 +1,7 @@
 import type { Config } from "tailwindcss";
 
 /**
- * EAGLE brand tokens — warm tan / brown / cream palette used across Helios apps.
+ * EAGLE brand tokens — warm tan / brown / cream palette used across Eagle Stone apps.
  * Exposed as Tailwind colours so the whole staff app shares one design system.
  */
 const config: Config = {

@@ -1,8 +1,8 @@
 {
-  "name": "helios-inventory",
+  "name": "eaglestone-inventory",
   "version": "1.0.0",
   "private": true,
-  "description": "Helios Stones — block-level marble/stone inventory system (Phase 1)",
+  "description": "Eagle Stone — block-level marble/stone inventory system (Phase 1)",
   "scripts": {
     "dev": "next dev",
     "build": "prisma generate && next build",

@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { formatNumber, formatSft } from "@/lib/utils";
 import { STATUS_LABELS, type Status } from "@/lib/constants";
 import { StatusBadge } from "@/components/ui/StatusBadge";
+import { BRAND } from "@/lib/brand";
 
 export const dynamic = "force-dynamic";
 
@@ -28,7 +29,7 @@ export default async function DashboardPage() {
 
   return (
     <div>
-      <PageHeader title="Dashboard" subtitle="Helios Stones · block-level inventory overview" />
+      <PageHeader title="Dashboard" subtitle={`${BRAND.name} · block-level inventory overview`} />
       <div className="space-y-6 p-6">
         <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
           <Stat label="Total Blocks" value={formatNumber(stats.total, 0)} href="/inventory" />

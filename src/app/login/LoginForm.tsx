@@ -35,7 +35,7 @@ export function LoginForm() {
       <div>
         <label className="label" htmlFor="email">Email</label>
         <input id="email" type="email" autoComplete="username" required className="input"
-          value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@heliosstones.com" />
+          value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@eaglestone.com" />
       </div>
       <div>
         <label className="label" htmlFor="password">Password</label>
@@ -46,7 +46,7 @@ export function LoginForm() {
       <button type="submit" disabled={loading} className="btn-primary w-full">
         {loading ? "Signing in…" : "Sign in"}
       </button>
-      <p className="text-center text-xs text-brown-400">Demo: admin@heliosstones.com / helios123</p>
+      <p className="text-center text-xs text-brown-400">Demo: admin@eaglestone.com / helios123</p>
     </form>
   );
 }

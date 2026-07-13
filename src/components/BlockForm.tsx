@@ -110,7 +110,7 @@ export function BlockForm({ initial }: { initial?: BlockFormData }) {
           <Field label="Length (CM)" name="lengthCm" type="number" value={numStr(f.lengthCm)} onChange={(v) => setF((p) => ({ ...p, lengthCm: v === "" ? null : Number(v) }))} />
           <Field label="Height (CM)" name="heightCm" type="number" value={numStr(f.heightCm)} onChange={(v) => setF((p) => ({ ...p, heightCm: v === "" ? null : Number(v) }))} />
           <Field label="Thickness (MM)" name="thicknessMm" type="number" value={numStr(f.thicknessMm)} onChange={(v) => setF((p) => ({ ...p, thicknessMm: v === "" ? null : Number(v) }))} />
-          <Field label="PCS (slabs)" name="pcs" type="number" value={numStr(f.pcs)} onChange={(v) => setF((p) => ({ ...p, pcs: v === "" ? null : Number(v) }))} error={errors.pcs} />
+          <Field label="No. of slabs" name="pcs" type="number" value={numStr(f.pcs)} onChange={(v) => setF((p) => ({ ...p, pcs: v === "" ? null : Number(v) }))} error={errors.pcs} />
           <Field label="End PCS" name="endPcs" type="number" value={numStr(f.endPcs)} onChange={(v) => setF((p) => ({ ...p, endPcs: v === "" ? null : Number(v) }))} />
           <Field label="Total SFT" name="totalSft" type="number" value={numStr(f.totalSft)} onChange={(v) => setF((p) => ({ ...p, totalSft: v === "" ? null : Number(v) }))} />
         </div>

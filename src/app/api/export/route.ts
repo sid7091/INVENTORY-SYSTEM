@@ -3,6 +3,7 @@ import { requireUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { buildExportWorkbook } from "@/lib/excel";
 import { buildWhere, type BlockFilters } from "@/lib/blocks";
+import { brandSlug } from "@/lib/brand";
 
 // Export the current (filtered) inventory to the Ready-to-Dispatch Excel layout.
 export async function GET(req: NextRequest) {
@@ -29,7 +30,7 @@ export async function GET(req: NextRequest) {
   return new Response(new Uint8Array(buf), {
     headers: {
       "Content-Type": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-      "Content-Disposition": `attachment; filename="helios-inventory-${date}.xlsx"`,
+      "Content-Disposition": `attachment; filename="${brandSlug()}-inventory-${date}.xlsx"`,
     },
   });
 }

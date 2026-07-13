@@ -7,7 +7,7 @@ import { parseWorkbook } from "../src/lib/excel";
 const prisma = new PrismaClient();
 
 async function main() {
-  const email = (process.env.SEED_ADMIN_EMAIL || "admin@heliosstones.com").toLowerCase();
+  const email = (process.env.SEED_ADMIN_EMAIL || "admin@eaglestone.com").toLowerCase();
   const password = process.env.SEED_ADMIN_PASSWORD || "helios123";
 
   const passwordHash = await bcrypt.hash(password, 10);
@@ -15,13 +15,13 @@ async function main() {
   // and re-seeding actually updates the login (not a no-op for existing users).
   const admin = await prisma.user.upsert({
     where: { email },
-    update: { passwordHash, name: "Helios Admin", role: "ADMIN", active: true },
-    create: { email, name: "Helios Admin", passwordHash, role: "ADMIN" },
+    update: { passwordHash, name: "Eagle Admin", role: "ADMIN", active: true },
+    create: { email, name: "Eagle Admin", passwordHash, role: "ADMIN" },
   });
   console.log(`✔ Admin user ready: ${email} (password: ${password})`);
 
   // Also seed a plain staff user for demoing roles.
-  const staffEmail = "staff@heliosstones.com";
+  const staffEmail = "staff@eaglestone.com";
   const staffHash = await bcrypt.hash("helios123", 10);
   await prisma.user.upsert({
     where: { email: staffEmail },

@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { requireUser } from "@/lib/auth";
 import { logAudit, diff } from "@/lib/audit";
 import { blockSchema, statusChangeSchema } from "@/lib/validation";
+import { parseRanges, normalizeRanges, rangesOverlap, rangesWithin, summarize, formatRanges, type Range } from "@/lib/pieces";
 
 export type ActionResult =
   | { ok: true; id?: string }
@@ -104,9 +105,9 @@ export async function changeStatus(id: string, expectedVersion: number, raw: unk
   const user = await requireUser();
   const parsed = statusChangeSchema.safeParse(raw);
   if (!parsed.success) return { ok: false, error: "A reason is required.", fieldErrors: zodErrors(parsed.error) };
-  const { status, reason } = parsed.data;
+  const { status, reason, pieces } = parsed.data;
 
-  const existing = await prisma.block.findUnique({ where: { id } });
+  const existing = await prisma.block.findUnique({ where: { id }, include: { allocations: true } });
   if (!existing || existing.deletedAt) return { ok: false, error: "Block not found." };
   if (existing.status === "NEEDS_PHOTOS") {
     return { ok: false, error: "This block is still in the photo gate. Add a photo before setting a status." };
@@ -114,21 +115,85 @@ export async function changeStatus(id: string, expectedVersion: number, raw: unk
   if (existing.version !== expectedVersion) {
     return { ok: false, stale: true, error: `Block changed since you opened it (now v${existing.version}). Reload before changing status.` };
   }
-  if (existing.status === status) return { ok: false, error: `Block is already ${status}.` };
+
+  const total = existing.pcs ?? 0;
+  const existingRanges: Range[] = existing.allocations.map((a): Range => [a.fromPiece, a.toPiece]);
+
+  // Resolve the requested change into: allocations to create, whether to clear
+  // existing ones, the final status, and an audit detail string.
+  let createAllocs: { fromPiece: number; toPiece: number; kind: string }[] = [];
+  let clearAllocs = false;
+  let finalStatus: string = status;
+  let detail = "";
+
+  const needsPieces = status === "PARTIALLY_SOLD" || status === "HOLD";
+
+  if (status === "IN_STOCK" || status === "READY_TO_DISPATCH") {
+    // Returning to stock frees every piece.
+    clearAllocs = existing.allocations.length > 0;
+    detail = clearAllocs ? "released all sold/hold allocations" : "";
+  } else if (status === "SOLD") {
+    // Whole block sold: mark every piece sold.
+    clearAllocs = true;
+    if (total > 0) createAllocs = [{ fromPiece: 1, toPiece: total, kind: "SOLD" }];
+    detail = total > 0 ? `all ${total} pieces sold` : "";
+  } else if (needsPieces) {
+    const kind = status === "PARTIALLY_SOLD" ? "SOLD" : "HOLD";
+    if (total <= 0) {
+      return { ok: false, error: "Set the block's number of slabs before recording partial sales or holds." };
+    }
+    if (pieces && pieces.trim()) {
+      let ranges: Range[];
+      try {
+        ranges = parseRanges(pieces);
+      } catch (e) {
+        return { ok: false, error: (e as Error).message, fieldErrors: { pieces: (e as Error).message } };
+      }
+      if (!rangesWithin(total, ranges)) {
+        return { ok: false, error: `Piece numbers must be between 1 and ${total}.`, fieldErrors: { pieces: `Out of range (1–${total})` } };
+      }
+      if (rangesOverlap(ranges, existingRanges)) {
+        return { ok: false, error: "Some of those pieces are already sold or on hold. Free them first or pick other pieces.", fieldErrors: { pieces: "Overlaps existing allocation" } };
+      }
+      createAllocs = normalizeRanges(ranges).map(([a, b]) => ({ fromPiece: a, toPiece: b, kind }));
+      detail = `${kind === "SOLD" ? "sold" : "held"} pieces ${formatRanges(ranges)}`;
+    } else if (status === "HOLD") {
+      // Hold with no pieces given = hold the whole remaining available block.
+      const summ = summarize(total, existing.allocations);
+      if (summ.availableRanges.length === 0) return { ok: false, error: "No available pieces left to hold." };
+      createAllocs = summ.availableRanges.map(([a, b]) => ({ fromPiece: a, toPiece: b, kind: "HOLD" }));
+      detail = `held all available pieces (${formatRanges(summ.availableRanges)})`;
+    } else {
+      return { ok: false, error: "Enter the piece numbers sold, e.g. 20-30.", fieldErrors: { pieces: "Required for a partial sale" } };
+    }
+
+    // Derive the real block status from the resulting allocation totals.
+    const summ = summarize(total, [...existing.allocations, ...createAllocs]);
+    if (summ.availableCount <= 0 && summ.heldCount === 0) finalStatus = "SOLD";
+    else if (summ.availableCount <= 0 && summ.soldCount === 0) finalStatus = "HOLD";
+    else if (summ.soldCount > 0) finalStatus = "PARTIALLY_SOLD";
+    else finalStatus = "HOLD";
+  }
 
   try {
     await prisma.$transaction(async (tx) => {
       const res = await tx.block.updateMany({
         where: { id, version: expectedVersion },
-        data: { status, version: { increment: 1 } },
+        data: { status: finalStatus, version: { increment: 1 } },
       });
       if (res.count === 0) throw new Error("STALE");
+      if (clearAllocs) await tx.pieceAllocation.deleteMany({ where: { blockId: id } });
+      for (const a of createAllocs) {
+        await tx.pieceAllocation.create({
+          data: { blockId: id, fromPiece: a.fromPiece, toPiece: a.toPiece, kind: a.kind, reason, createdBy: user.userId },
+        });
+      }
       await logAudit(tx, {
         action: "STATUS_CHANGE",
         userId: user.userId,
         blockId: id,
-        reason,
-        changes: { status: { from: existing.status, to: status } },
+        reason: detail ? `${reason} — ${detail}` : reason,
+        changes: { status: { from: existing.status, to: finalStatus } },
       });
     });
     revalidatePath("/inventory");

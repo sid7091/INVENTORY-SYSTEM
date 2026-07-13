@@ -113,7 +113,7 @@ export function ImportWizard() {
             <table className="min-w-full divide-y divide-cream-200">
               <thead className="bg-cream-100"><tr>
                 <th className="th">#</th><th className="th">Block No</th><th className="th">Colour</th><th className="th">Exporter</th>
-                <th className="th">Thk</th><th className="th">PCS</th><th className="th">SFT</th><th className="th">Action</th>
+                <th className="th">Thk</th><th className="th">Slabs</th><th className="th">SFT</th><th className="th">Action</th>
               </tr></thead>
               <tbody className="divide-y divide-cream-100">
                 {preview.rows.slice(0, 200).map((r) => (

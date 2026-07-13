@@ -2,9 +2,9 @@ import "server-only";
 import { cookies } from "next/headers";
 import { SignJWT, jwtVerify } from "jose";
 
-const COOKIE_NAME = "helios_session";
+const COOKIE_NAME = "inv_session";
 const secret = new TextEncoder().encode(
-  process.env.AUTH_SECRET || "helios-dev-secret-change-me",
+  process.env.AUTH_SECRET || "dev-secret-change-me",
 );
 
 export interface SessionPayload {

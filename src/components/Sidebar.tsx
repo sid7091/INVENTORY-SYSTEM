@@ -3,6 +3,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
+import { BRAND } from "@/lib/brand";
 
 const NAV = [
   { href: "/", label: "Dashboard", icon: "▚" },
@@ -34,9 +35,9 @@ export function Sidebar({
   return (
     <aside className="flex h-screen w-60 flex-col border-r border-tan-200 bg-cream-50">
       <div className="flex items-center gap-3 border-b border-tan-200 px-5 py-4">
-        <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-brown-700 font-bold text-cream-50">H</div>
+        <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-brown-700 font-bold text-cream-50">{BRAND.monogram}</div>
         <div>
-          <div className="font-serif text-base font-bold leading-tight text-brown-800">Helios</div>
+          <div className="font-serif text-base font-bold leading-tight text-brown-800">{BRAND.short}</div>
           <div className="text-[11px] text-brown-400">Inventory</div>
         </div>
       </div>

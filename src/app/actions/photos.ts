@@ -4,8 +4,49 @@ import { prisma } from "@/lib/prisma";
 import { requireUser } from "@/lib/auth";
 import { logAudit } from "@/lib/audit";
 import { savePhoto, stagePhoto, commitStaged, deleteStaged } from "@/lib/storage";
-import { parseBlockNoFromFilename } from "@/lib/utils";
+import { parsePhotoName } from "@/lib/utils";
 import type { ActionResult } from "./blocks";
+
+// Normalised, matchable form of a block number: uppercase alphanumerics only.
+function normKey(blockNo: string): string {
+  return blockNo.toUpperCase().replace(/[^A-Z0-9]/g, "");
+}
+function digitsOf(blockNo: string): string | null {
+  const m = blockNo.match(/\d{2,6}/g);
+  return m ? m[m.length - 1] : null;
+}
+
+type BlockKeyEntry = { id: string; blockNo: string; key: string; digits: string | null };
+
+// Build a matcher over all live blocks. Resolves a parsed filename token to a
+// block id, but ONLY when the match is unambiguous (exactly one candidate):
+//   1. exact normalised key   (ANW-M543.jpg  -> ANW-M543)
+//   2. block key ends with token key, when the token has letters (M543 -> ANW-M543)
+//   3. numeric equality, when the token is digits only (543 -> ANW-M543)
+async function buildBlockMatcher() {
+  const blocks = await prisma.block.findMany({
+    where: { deletedAt: null },
+    select: { id: true, blockNo: true },
+  });
+  const entries: BlockKeyEntry[] = blocks.map((b) => ({
+    id: b.id,
+    blockNo: b.blockNo,
+    key: normKey(b.blockNo),
+    digits: digitsOf(b.blockNo),
+  }));
+
+  return function match(token: { key: string; digits: string | null }): string | null {
+    const k = token.key;
+    let cands = entries.filter((e) => e.key === k);
+    if (!cands.length && /[A-Z]/.test(k) && /\d/.test(k)) {
+      cands = entries.filter((e) => e.key.endsWith(k));
+    }
+    if (!cands.length && token.digits) {
+      cands = entries.filter((e) => e.digits === token.digits);
+    }
+    return cands.length === 1 ? cands[0].id : null; // unique match only
+  };
+}
 
 // Attach a photo to a block. The FIRST photo auto-promotes the block out of the
 // NEEDS_PHOTOS gate into IN_STOCK (the "photo gate" rule).
@@ -82,22 +123,19 @@ export async function createPhotoBatch(formData: FormData): Promise<{ ok: true; 
   if (files.length === 0) return { ok: false, error: "No files selected." };
 
   const batch = await prisma.photoBatch.create({ data: { createdBy: user.userId, status: "REVIEW" } });
+  const match = await buildBlockMatcher();
 
   for (const f of files) {
     const bytes = Buffer.from(await f.arrayBuffer());
     const { tempUrl } = await stagePhoto(f.name, bytes);
-    const guess = parseBlockNoFromFilename(f.name);
-    let matchedBlockId: string | null = null;
-    if (guess) {
-      const block = await prisma.block.findFirst({ where: { blockNo: guess, deletedAt: null }, select: { id: true } });
-      matchedBlockId = block?.id ?? null;
-    }
+    const parsed = parsePhotoName(f.name);
+    const matchedBlockId = parsed ? match({ key: parsed.key, digits: parsed.digits }) : null;
     await prisma.photoBatchItem.create({
       data: {
         batchId: batch.id,
         filename: f.name,
         tempUrl,
-        guessBlockNo: guess,
+        guessBlockNo: parsed?.raw ?? null,
         matchedBlockId,
         decision: matchedBlockId ? "APPROVE" : "PENDING", // pre-approve confident matches
       },
@@ -121,9 +159,21 @@ export async function updatePhotoItem(
   let matchedBlockId = item.matchedBlockId;
   if (decision === "REASSIGN" || decision === "APPROVE") {
     if (reassignBlockNo) {
-      const block = await prisma.block.findFirst({ where: { blockNo: reassignBlockNo.toUpperCase(), deletedAt: null }, select: { id: true } });
-      if (!block) return { ok: false, error: `No block found with number ${reassignBlockNo}.` };
-      matchedBlockId = block.id;
+      // Exact block number first; otherwise fall back to the same fuzzy matcher
+      // used for auto-matching (so "543" or "M543" resolves too).
+      const exact = await prisma.block.findFirst({
+        where: { blockNo: reassignBlockNo.toUpperCase(), deletedAt: null },
+        select: { id: true },
+      });
+      if (exact) {
+        matchedBlockId = exact.id;
+      } else {
+        const parsed = parsePhotoName(`${reassignBlockNo}.x`);
+        const match = await buildBlockMatcher();
+        const id = parsed ? match({ key: parsed.key, digits: parsed.digits }) : null;
+        if (!id) return { ok: false, error: `No unique block found for "${reassignBlockNo}".` };
+        matchedBlockId = id;
+      }
     }
     if (!matchedBlockId) return { ok: false, error: "Assign a valid block before approving." };
   }

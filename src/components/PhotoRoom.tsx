@@ -128,7 +128,8 @@ export function PhotoRoom({ batchId, items }: { batchId: string | null; items: R
       >
         <div className="text-3xl text-tan-400">⬆</div>
         <p className="mt-2 text-sm font-medium text-brown-600">{uploading ? "Uploading…" : "Drop hundreds of photos here, or click to select"}</p>
-        <p className="text-xs text-brown-400">Filenames are auto-matched to block numbers (e.g. ANW-M543.jpg → ANW-M543)</p>
+        <p className="text-xs text-brown-400">Auto-matched by filename — slab numbers are ignored so many photos map to one block
+          (ANW-M543, ANW-M543 1, ANW-M543_2 → ANW-M543). A missing prefix still resolves (M543-1, 543 2 → ANW-M543).</p>
         <input ref={inputRef} type="file" accept="image/*" multiple hidden onChange={(e) => upload(e.target.files)} />
       </div>
 

@@ -5,6 +5,7 @@
 //
 import { promises as fs } from "fs";
 import path from "path";
+import { brandSlug } from "../src/lib/brand";
 
 async function main() {
   const root = process.cwd();
@@ -13,7 +14,7 @@ async function main() {
   await fs.mkdir(backupDir, { recursive: true });
 
   const stamp = new Date().toISOString().replace(/[:.]/g, "-").slice(0, 19);
-  const dest = path.join(backupDir, `helios-${stamp}.db`);
+  const dest = path.join(backupDir, `${brandSlug()}-${stamp}.db`);
   await fs.copyFile(dbPath, dest);
   console.log(`✔ Backup written: ${dest}`);
 

@@ -1,6 +1,7 @@
 import { requireUser } from "@/lib/auth";
 import { promises as fs } from "fs";
 import path from "path";
+import { brandSlug } from "@/lib/brand";
 
 // On-demand backup: streams the SQLite database file as a download. Combined
 // with scripts/backup.ts (cron) this covers the daily-backup requirement.
@@ -15,7 +16,7 @@ export async function GET() {
     return new Response(new Uint8Array(buf), {
       headers: {
         "Content-Type": "application/octet-stream",
-        "Content-Disposition": `attachment; filename="helios-backup-${stamp}.db"`,
+        "Content-Disposition": `attachment; filename="${brandSlug()}-backup-${stamp}.db"`,
       },
     });
   } catch (e) {
