@@ -11,26 +11,24 @@ async function main() {
   const password = process.env.SEED_ADMIN_PASSWORD || "helios123";
 
   const passwordHash = await bcrypt.hash(password, 10);
+  // Re-syncs the password/name/role on every seed so changing SEED_ADMIN_PASSWORD
+  // and re-seeding actually updates the login (not a no-op for existing users).
   const admin = await prisma.user.upsert({
     where: { email },
-    update: {},
+    update: { passwordHash, name: "Helios Admin", role: "ADMIN", active: true },
     create: { email, name: "Helios Admin", passwordHash, role: "ADMIN" },
   });
-  console.log(`✔ Admin user ready: ${email}`);
+  console.log(`✔ Admin user ready: ${email} (password: ${password})`);
 
   // Also seed a plain staff user for demoing roles.
   const staffEmail = "staff@heliosstones.com";
+  const staffHash = await bcrypt.hash("helios123", 10);
   await prisma.user.upsert({
     where: { email: staffEmail },
-    update: {},
-    create: {
-      email: staffEmail,
-      name: "Warehouse Staff",
-      passwordHash: await bcrypt.hash("helios123", 10),
-      role: "STAFF",
-    },
+    update: { passwordHash: staffHash, name: "Warehouse Staff", role: "STAFF", active: true },
+    create: { email: staffEmail, name: "Warehouse Staff", passwordHash: staffHash, role: "STAFF" },
   });
-  console.log(`✔ Staff user ready: ${staffEmail}`);
+  console.log(`✔ Staff user ready: ${staffEmail} (password: helios123)`);
 
   // Optionally import the sample spreadsheet if the DB has no blocks yet.
   const existing = await prisma.block.count();
