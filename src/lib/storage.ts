@@ -3,6 +3,13 @@ import { promises as fs } from "fs";
 import path from "path";
 import { slugifyFilename } from "./utils";
 
+// Photo storage abstraction.
+//
+// Locally (and self-hosted) photos are written under public/uploads. On Vercel
+// the filesystem is read-only + ephemeral, so when BLOB_READ_WRITE_TOKEN is set
+// we transparently use Vercel Blob instead. The rest of the app only sees URLs.
+const USE_BLOB = !!process.env.BLOB_READ_WRITE_TOKEN;
+
 const UPLOAD_DIR = path.join(process.cwd(), "public", "uploads");
 const STAGING_DIR = path.join(UPLOAD_DIR, "_staging");
 
@@ -19,22 +26,36 @@ function uniquePrefix(): string {
 
 // Save a committed photo. Returns the public URL path.
 export async function savePhoto(filename: string, bytes: Buffer): Promise<{ url: string; filename: string }> {
+  const key = `${uniquePrefix()}-${slugifyFilename(filename)}`;
+  if (USE_BLOB) {
+    const { put } = await import("@vercel/blob");
+    const { url } = await put(`photos/${key}`, bytes, { access: "public" });
+    return { url, filename };
+  }
   await ensureDir(UPLOAD_DIR);
-  const safe = `${uniquePrefix()}-${slugifyFilename(filename)}`;
-  await fs.writeFile(path.join(UPLOAD_DIR, safe), bytes);
-  return { url: `/uploads/${safe}`, filename };
+  await fs.writeFile(path.join(UPLOAD_DIR, key), bytes);
+  return { url: `/uploads/${key}`, filename };
 }
 
 // Stage a photo for the review room (not yet visible in inventory).
 export async function stagePhoto(filename: string, bytes: Buffer): Promise<{ tempUrl: string }> {
+  const key = `${uniquePrefix()}-${slugifyFilename(filename)}`;
+  if (USE_BLOB) {
+    const { put } = await import("@vercel/blob");
+    const { url } = await put(`staging/${key}`, bytes, { access: "public" });
+    return { tempUrl: url };
+  }
   await ensureDir(STAGING_DIR);
-  const safe = `${uniquePrefix()}-${slugifyFilename(filename)}`;
-  await fs.writeFile(path.join(STAGING_DIR, safe), bytes);
-  return { tempUrl: `/uploads/_staging/${safe}` };
+  await fs.writeFile(path.join(STAGING_DIR, key), bytes);
+  return { tempUrl: `/uploads/_staging/${key}` };
 }
 
-// Promote a staged file into the permanent uploads dir.
+// Promote a staged file into permanent storage.
 export async function commitStaged(tempUrl: string): Promise<string> {
+  if (USE_BLOB) {
+    // Blob-staged files are already permanent public URLs; keep as-is.
+    return tempUrl;
+  }
   const rel = tempUrl.replace(/^\/uploads\//, "");
   const src = path.join(UPLOAD_DIR, rel);
   const base = path.basename(src);
@@ -48,6 +69,13 @@ export async function commitStaged(tempUrl: string): Promise<string> {
 }
 
 export async function deleteStaged(tempUrl: string): Promise<void> {
+  if (USE_BLOB) {
+    if (/^https?:\/\//.test(tempUrl)) {
+      const { del } = await import("@vercel/blob");
+      await del(tempUrl).catch(() => {});
+    }
+    return;
+  }
   const rel = tempUrl.replace(/^\/uploads\//, "");
   await fs.unlink(path.join(UPLOAD_DIR, rel)).catch(() => {});
 }
