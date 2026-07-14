@@ -33,11 +33,15 @@ Partially Sold / To Be Ready / …) and `status`. Optional `Slab[]` children,
 
 ```bash
 npm install
-cp .env.example .env          # then edit AUTH_SECRET etc. (a working .env is included for dev)
-npm run db:push               # create the SQLite schema
+cp .env.example .env          # set DATABASE_URL to your Postgres (Neon) connection string + AUTH_SECRET
+npm run db:push               # create the database tables
 npm run db:seed               # create admin + staff users and import the sample sheet
 npm run dev                   # http://localhost:3000
 ```
+
+> The app uses **Postgres** (e.g. a free [Neon](https://neon.tech) database).
+> Deploying to Vercel? See **[DEPLOY-VERCEL.md](./DEPLOY-VERCEL.md)** — the repo
+> auto-deploys on every push once connected.
 
 **Demo login:** `admin@eaglestone.com` / `helios123` (also `staff@eaglestone.com`).
 
