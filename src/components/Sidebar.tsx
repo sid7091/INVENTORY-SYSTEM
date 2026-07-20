@@ -5,7 +5,14 @@ import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { BRAND } from "@/lib/brand";
 
-const NAV = [
+interface NavItem {
+  href: string;
+  label: string;
+  icon: string;
+  badgeKey?: "needsPhotos";
+}
+
+const NAV: NavItem[] = [
   { href: "/", label: "Dashboard", icon: "▚" },
   { href: "/inventory", label: "Inventory", icon: "▦" },
   { href: "/needs-photos", label: "Needs Photos", icon: "◫", badgeKey: "needsPhotos" },
@@ -15,6 +22,8 @@ const NAV = [
   { href: "/audit", label: "Audit Log", icon: "≣" },
   { href: "/trash", label: "Trash", icon: "🗑" },
 ];
+
+const ADMIN_NAV: NavItem[] = [{ href: "/admin", label: "Admin", icon: "⚙" }];
 
 export function Sidebar({
   user,
@@ -43,7 +52,7 @@ export function Sidebar({
       </div>
 
       <nav className="flex-1 space-y-1 overflow-y-auto p-3">
-        {NAV.map((item) => {
+        {(user.role === "ADMIN" ? [...NAV, ...ADMIN_NAV] : NAV).map((item) => {
           const active = item.href === "/" ? pathname === "/" : pathname.startsWith(item.href);
           const badge = item.badgeKey === "needsPhotos" ? counts.needsPhotos : 0;
           return (

@@ -79,3 +79,22 @@ export async function deleteStaged(tempUrl: string): Promise<void> {
   const rel = tempUrl.replace(/^\/uploads\//, "");
   await fs.unlink(path.join(UPLOAD_DIR, rel)).catch(() => {});
 }
+
+// Remove every stored photo (committed + staged). Used by the admin "clear all
+// data" reset. Best-effort — DB rows are the source of truth either way.
+export async function clearAllPhotoFiles(): Promise<void> {
+  if (USE_BLOB) {
+    const { list, del } = await import("@vercel/blob");
+    for (const prefix of ["photos/", "staging/"]) {
+      let cursor: string | undefined;
+      do {
+        const res = await list({ prefix, cursor, limit: 500 });
+        if (res.blobs.length) await del(res.blobs.map((b) => b.url));
+        cursor = res.cursor;
+      } while (cursor);
+    }
+    return;
+  }
+  await fs.rm(UPLOAD_DIR, { recursive: true, force: true }).catch(() => {});
+  await ensureDir(UPLOAD_DIR);
+}

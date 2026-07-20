@@ -118,3 +118,7 @@ export const EXCEL_COLUMNS = [
 ] as const;
 
 export type ExcelColumnKey = (typeof EXCEL_COLUMNS)[number]["key"];
+
+// -- Admin "Clear all data" reset ---------------------------------------------
+
+export const CLEAR_DATA_CONFIRM_PHRASE = "DELETE ALL DATA";
