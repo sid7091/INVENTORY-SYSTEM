@@ -95,6 +95,12 @@ export async function clearAllPhotoFiles(): Promise<void> {
     }
     return;
   }
-  await fs.rm(UPLOAD_DIR, { recursive: true, force: true }).catch(() => {});
-  await ensureDir(UPLOAD_DIR);
+  // Remove only photo files, not the directory itself — .gitkeep must survive.
+  for (const dir of [UPLOAD_DIR, STAGING_DIR]) {
+    const entries = await fs.readdir(dir).catch(() => [] as string[]);
+    for (const entry of entries) {
+      if (entry === ".gitkeep" || entry === "_staging") continue;
+      await fs.rm(path.join(dir, entry), { recursive: true, force: true }).catch(() => {});
+    }
+  }
 }

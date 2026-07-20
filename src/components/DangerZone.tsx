@@ -5,6 +5,10 @@ import { clearAllData, type DataCounts } from "@/app/actions/admin";
 import { CLEAR_DATA_CONFIRM_PHRASE } from "@/lib/constants";
 import { useToast } from "@/components/ui/Toast";
 
+function plural(n: number, singular: string, pluralForm = `${singular}s`): string {
+  return `${n} ${n === 1 ? singular : pluralForm}`;
+}
+
 export function DangerZone({ counts }: { counts: DataCounts }) {
   const router = useRouter();
   const toast = useToast();
@@ -65,8 +69,8 @@ export function DangerZone({ counts }: { counts: DataCounts }) {
           <div className="w-full max-w-md card border-status-damaged/40 p-6" onClick={(e) => e.stopPropagation()}>
             <h2 className="font-serif text-lg font-bold text-status-damaged">Clear all data?</h2>
             <p className="mt-2 text-sm text-brown-600">
-              This will permanently delete <strong>{counts.blocks} blocks</strong>, <strong>{counts.photos} photos</strong>,
-              and <strong>{counts.auditLogs} audit log entries</strong>. This cannot be undone — it is not
+              This will permanently delete <strong>{plural(counts.blocks, "block")}</strong>, <strong>{plural(counts.photos, "photo")}</strong>,
+              and <strong>{plural(counts.auditLogs, "audit log entry", "audit log entries")}</strong>. This cannot be undone — it is not
               recoverable from Trash. Staff accounts are not affected.
             </p>
             <div className="mt-4">
