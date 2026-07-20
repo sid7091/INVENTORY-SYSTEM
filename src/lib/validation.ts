@@ -1,18 +1,25 @@
 import { z } from "zod";
 import { STATUSES, CATEGORIES, ASSIGNABLE_STATUSES } from "./constants";
 
-// Coerce empty strings from forms to undefined before number parsing.
-const optionalNumber = z
-  .preprocess((v) => (v === "" || v == null ? undefined : v), z.coerce.number().finite())
-  .optional();
+// Coerce empty strings from forms to undefined before number parsing. The
+// inner schema (not the preprocess wrapper) must carry .optional(): Zod's
+// ZodOptional short-circuits on the RAW pre-preprocess value, so chaining
+// .optional() after .preprocess() never sees the transformed undefined and
+// the inner schema still rejects it as missing.
+const optionalNumber = z.preprocess(
+  (v) => (v === "" || v == null ? undefined : v),
+  z.coerce.number().finite().optional(),
+);
 
-const optionalInt = z
-  .preprocess((v) => (v === "" || v == null ? undefined : v), z.coerce.number().int())
-  .optional();
+const optionalInt = z.preprocess(
+  (v) => (v === "" || v == null ? undefined : v),
+  z.coerce.number().int().optional(),
+);
 
-const optionalString = z
-  .preprocess((v) => (typeof v === "string" && v.trim() === "" ? undefined : v), z.string().trim())
-  .optional();
+const optionalString = z.preprocess(
+  (v) => (typeof v === "string" && v.trim() === "" ? undefined : v),
+  z.string().trim().optional(),
+);
 
 export const blockSchema = z.object({
   blockNo: z.string().trim().min(1, "Block number is required"),

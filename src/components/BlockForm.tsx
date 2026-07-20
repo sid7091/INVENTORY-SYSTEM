@@ -89,11 +89,11 @@ export function BlockForm({ initial }: { initial?: BlockFormData }) {
         <h2 className="mb-4 font-serif text-base font-bold text-brown-800">Identity</h2>
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
           <Field label="Block No" name="blockNo" value={f.blockNo} onChange={set("blockNo")} required error={errors.blockNo} placeholder="ANW-M543" />
-          <Field label="Quarry No" name="quarryNo" value={f.quarryNo ?? ""} onChange={set("quarryNo")} placeholder="HSS-105" />
+          <Field label="Quarry No" name="quarryNo" value={f.quarryNo ?? ""} onChange={set("quarryNo")} error={errors.quarryNo} placeholder="HSS-105" />
           <Field label="Colour / Variety" name="colour" value={f.colour} onChange={set("colour")} required error={errors.colour} placeholder="AQUA GREY" />
-          <Field label="Exporter Name" name="exporter" value={f.exporter ?? ""} onChange={set("exporter")} />
-          <Field label="Quarry Name" name="quarry" value={f.quarry ?? ""} onChange={set("quarry")} />
-          <Field label="Warehouse / Yard" name="warehouse" value={f.warehouse ?? ""} onChange={set("warehouse")} />
+          <Field label="Exporter Name" name="exporter" value={f.exporter ?? ""} onChange={set("exporter")} error={errors.exporter} />
+          <Field label="Quarry Name" name="quarry" value={f.quarry ?? ""} onChange={set("quarry")} error={errors.quarry} />
+          <Field label="Warehouse / Yard" name="warehouse" value={f.warehouse ?? ""} onChange={set("warehouse")} error={errors.warehouse} />
           <div>
             <label className="label" htmlFor="category">Category</label>
             <select id="category" className="input" value={f.category} onChange={(e) => set("category")(e.target.value)}>
@@ -107,12 +107,12 @@ export function BlockForm({ initial }: { initial?: BlockFormData }) {
         <h2 className="mb-4 font-serif text-base font-bold text-brown-800">Measurements</h2>
         <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
           <Field label="Weight (Tons)" name="weightTons" type="number" value={numStr(f.weightTons)} onChange={(v) => setF((p) => ({ ...p, weightTons: v === "" ? null : Number(v) }))} error={errors.weightTons} />
-          <Field label="Length (CM)" name="lengthCm" type="number" value={numStr(f.lengthCm)} onChange={(v) => setF((p) => ({ ...p, lengthCm: v === "" ? null : Number(v) }))} />
-          <Field label="Height (CM)" name="heightCm" type="number" value={numStr(f.heightCm)} onChange={(v) => setF((p) => ({ ...p, heightCm: v === "" ? null : Number(v) }))} />
-          <Field label="Thickness (MM)" name="thicknessMm" type="number" value={numStr(f.thicknessMm)} onChange={(v) => setF((p) => ({ ...p, thicknessMm: v === "" ? null : Number(v) }))} />
+          <Field label="Length (CM)" name="lengthCm" type="number" value={numStr(f.lengthCm)} onChange={(v) => setF((p) => ({ ...p, lengthCm: v === "" ? null : Number(v) }))} error={errors.lengthCm} />
+          <Field label="Height (CM)" name="heightCm" type="number" value={numStr(f.heightCm)} onChange={(v) => setF((p) => ({ ...p, heightCm: v === "" ? null : Number(v) }))} error={errors.heightCm} />
+          <Field label="Thickness (MM)" name="thicknessMm" type="number" value={numStr(f.thicknessMm)} onChange={(v) => setF((p) => ({ ...p, thicknessMm: v === "" ? null : Number(v) }))} error={errors.thicknessMm} />
           <Field label="No. of slabs" name="pcs" type="number" value={numStr(f.pcs)} onChange={(v) => setF((p) => ({ ...p, pcs: v === "" ? null : Number(v) }))} error={errors.pcs} />
-          <Field label="End PCS" name="endPcs" type="number" value={numStr(f.endPcs)} onChange={(v) => setF((p) => ({ ...p, endPcs: v === "" ? null : Number(v) }))} />
-          <Field label="Total SFT" name="totalSft" type="number" value={numStr(f.totalSft)} onChange={(v) => setF((p) => ({ ...p, totalSft: v === "" ? null : Number(v) }))} />
+          <Field label="End PCS" name="endPcs" type="number" value={numStr(f.endPcs)} onChange={(v) => setF((p) => ({ ...p, endPcs: v === "" ? null : Number(v) }))} error={errors.endPcs} />
+          <Field label="Total SFT" name="totalSft" type="number" value={numStr(f.totalSft)} onChange={(v) => setF((p) => ({ ...p, totalSft: v === "" ? null : Number(v) }))} error={errors.totalSft} />
         </div>
       </section>
 
