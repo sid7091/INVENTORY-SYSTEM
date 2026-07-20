@@ -106,9 +106,16 @@ export async function deletePhoto(photoId: string): Promise<ActionResult> {
   if (!photo) return { ok: false, error: "Photo not found." };
   await prisma.$transaction(async (tx) => {
     await tx.photo.delete({ where: { id: photoId } });
+    // Deleting the primary photo must not leave the block with none — promote
+    // the oldest remaining photo so the inventory grid thumbnail doesn't vanish.
+    if (photo.isPrimary) {
+      const next = await tx.photo.findFirst({ where: { blockId: photo.blockId }, orderBy: { createdAt: "asc" } });
+      if (next) await tx.photo.update({ where: { id: next.id }, data: { isPrimary: true } });
+    }
     await logAudit(tx, { action: "PHOTO_DELETE", userId: user.userId, blockId: photo.blockId, reason: `Photo removed: ${photo.filename}` });
   });
   revalidatePath(`/inventory/${photo.blockId}`);
+  revalidatePath("/inventory");
   return { ok: true };
 }
 
