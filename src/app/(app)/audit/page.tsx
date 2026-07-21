@@ -24,7 +24,7 @@ export default async function AuditPage({ searchParams }: { searchParams: Promis
   return (
     <div>
       <PageHeader title="Audit Log" subtitle={`${total} recorded event${total === 1 ? "" : "s"} · who / when / what / why`} />
-      <div className="p-6">
+      <div className="p-4 sm:p-6">
         <div className="card overflow-x-auto">
           <table className="min-w-full divide-y divide-cream-200">
             <thead className="bg-cream-100"><tr>

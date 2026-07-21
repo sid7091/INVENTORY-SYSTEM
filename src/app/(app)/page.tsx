@@ -30,7 +30,7 @@ export default async function DashboardPage() {
   return (
     <div>
       <PageHeader title="Dashboard" subtitle={`${BRAND.name} · block-level inventory overview`} />
-      <div className="space-y-6 p-6">
+      <div className="space-y-6 p-4 sm:p-6">
         <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
           <Stat label="Total Blocks" value={formatNumber(stats.total, 0)} href="/inventory" />
           <Stat label="Live Inventory" value={formatNumber(stats.live, 0)} href="/inventory?status=IN_STOCK" accent="text-status-instock" />

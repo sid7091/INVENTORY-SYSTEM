@@ -34,7 +34,7 @@ export default async function PhotoRoomPage() {
         title="Bulk Photo Room"
         subtitle="Drop files → auto-match → review & approve. Nothing touches inventory until you commit."
       />
-      <div className="p-6">
+      <div className="p-4 sm:p-6">
         <PhotoRoom batchId={batch?.id ?? null} items={items} />
       </div>
     </div>

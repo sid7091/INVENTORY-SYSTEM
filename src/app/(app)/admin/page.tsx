@@ -13,7 +13,7 @@ export default async function AdminPage() {
     return (
       <div>
         <PageHeader title="Admin" />
-        <div className="p-6">
+        <div className="p-4 sm:p-6">
           <div className="card p-6 text-sm text-brown-600">
             This page is restricted to admins. Ask an {BRAND.name} admin for access if you need it.
           </div>
@@ -27,7 +27,7 @@ export default async function AdminPage() {
   return (
     <div>
       <PageHeader title="Admin" subtitle="Account and data management" />
-      <div className="space-y-6 p-6">
+      <div className="space-y-6 p-4 sm:p-6">
         <DangerZone counts={counts} />
       </div>
     </div>

@@ -19,7 +19,7 @@ export default async function NeedsPhotosPage() {
         subtitle={`${blocks.length} block${blocks.length === 1 ? "" : "s"} waiting for photos · hidden from main inventory until released`}
         actions={<Link href="/photo-room" className="btn-primary text-sm">Open Photo Room →</Link>}
       />
-      <div className="p-6">
+      <div className="p-4 sm:p-6">
         {blocks.length === 0 ? (
           <div className="card flex flex-col items-center justify-center py-16 text-center">
             <div className="text-4xl">✓</div>

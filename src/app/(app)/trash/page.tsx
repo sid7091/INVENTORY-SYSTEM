@@ -22,7 +22,7 @@ export default async function TrashPage() {
         title="Trash"
         subtitle={`Soft-deleted blocks are recoverable for ${TRASH_RETENTION_DAYS} days, then purged`}
       />
-      <div className="p-6">
+      <div className="p-4 sm:p-6">
         {blocks.length === 0 ? (
           <div className="card flex flex-col items-center justify-center py-16 text-center">
             <div className="text-4xl">🗑</div>

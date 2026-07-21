@@ -54,8 +54,8 @@ export default async function InventoryPage({
           </>
         }
       />
-      <div className="space-y-4 p-6">
-        <div className="flex flex-wrap items-end justify-between gap-3">
+      <div className="space-y-4 p-4 sm:p-6">
+        <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-end sm:justify-between">
           <Filters options={options} />
           <ViewToggle current={view} />
         </div>

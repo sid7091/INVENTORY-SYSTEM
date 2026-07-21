@@ -8,7 +8,7 @@ export default function ImportPage() {
         title="Bulk Excel Import"
         subtitle="Validation preview → dry-run → transactional commit. New blocks enter the photo gate."
       />
-      <div className="p-6">
+      <div className="p-4 sm:p-6">
         <ImportWizard />
       </div>
     </div>

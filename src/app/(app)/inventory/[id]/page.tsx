@@ -55,7 +55,7 @@ export default async function BlockDetailPage({ params }: { params: Promise<{ id
         }
       />
 
-      <div className="grid gap-6 p-6 lg:grid-cols-3">
+      <div className="grid gap-4 p-4 sm:gap-6 sm:p-6 lg:grid-cols-3">
         <div className="space-y-6 lg:col-span-2">
           <section className="card p-5">
             <div className="mb-4 flex items-center justify-between">

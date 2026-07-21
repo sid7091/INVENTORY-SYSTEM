@@ -1,6 +1,6 @@
 import { requireUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { Sidebar } from "@/components/Sidebar";
+import { AppShell } from "@/components/AppShell";
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const user = await requireUser();
@@ -9,12 +9,11 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   });
 
   return (
-    <div className="flex h-screen overflow-hidden">
-      <Sidebar
-        user={{ name: user.name, email: user.email, role: user.role }}
-        counts={{ needsPhotos }}
-      />
-      <main className="flex-1 overflow-y-auto">{children}</main>
-    </div>
+    <AppShell
+      user={{ name: user.name, email: user.email, role: user.role }}
+      counts={{ needsPhotos }}
+    >
+      {children}
+    </AppShell>
   );
 }

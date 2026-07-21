@@ -13,7 +13,7 @@ export default async function EditBlockPage({ params }: { params: Promise<{ id: 
   return (
     <div>
       <PageHeader title={`Edit ${block.blockNo}`} subtitle={`Version ${block.version} · concurrency-protected`} />
-      <div className="mx-auto max-w-4xl p-6">
+      <div className="mx-auto max-w-4xl p-4 sm:p-6">
         <BlockForm
           initial={{
             id: block.id, version: block.version, blockNo: block.blockNo, quarryNo: block.quarryNo,
