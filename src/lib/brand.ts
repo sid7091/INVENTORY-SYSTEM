@@ -12,8 +12,12 @@ export const BRAND = {
   short: process.env.NEXT_PUBLIC_BRAND_SHORT?.trim() || name.split(/\s+/)[0],
   /** One-line tagline. */
   tagline: process.env.NEXT_PUBLIC_BRAND_TAGLINE?.trim() || "Block-level marble & stone inventory",
-  /** Single-letter monogram for the logo mark. */
+  /** Single-letter monogram, used as a fallback if no logo image is set. */
   monogram: (process.env.NEXT_PUBLIC_BRAND_SHORT?.trim() || name).charAt(0).toUpperCase(),
+  /** Path to the square icon mark (transparent PNG) — sidebar, mobile header. */
+  logoUrl: process.env.NEXT_PUBLIC_BRAND_LOGO_URL?.trim() || "/eagle-logo.png",
+  /** Path to the full stacked wordmark (transparent PNG) — login page hero. */
+  wordmarkUrl: process.env.NEXT_PUBLIC_BRAND_WORDMARK_URL?.trim() || "/eagle-stone-wordmark.png",
 } as const;
 
 /** Filesystem-safe slug of the brand name, e.g. "eagle-stone" (for export/backup filenames). */

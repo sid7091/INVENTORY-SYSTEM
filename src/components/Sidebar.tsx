@@ -70,7 +70,8 @@ export function Sidebar({
         )}
       >
         <div className="flex items-center gap-3 border-b border-tan-200 px-5 py-4">
-          <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-brown-700 font-bold text-cream-50">{BRAND.monogram}</div>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={BRAND.logoUrl} alt={BRAND.name} className="h-9 w-9 object-contain" />
           <div>
             <div className="font-serif text-base font-bold leading-tight text-brown-800">{BRAND.short}</div>
             <div className="text-[11px] text-brown-400">Inventory</div>

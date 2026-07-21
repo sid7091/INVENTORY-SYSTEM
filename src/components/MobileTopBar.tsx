@@ -19,7 +19,8 @@ export function MobileTopBar({
         ☰
       </button>
       <div className="flex items-center gap-2">
-        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-brown-700 text-sm font-bold text-cream-50">{BRAND.monogram}</div>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src={BRAND.logoUrl} alt={BRAND.name} className="h-8 w-8 object-contain" />
         <span className="font-serif text-base font-bold text-brown-800">{BRAND.short}</span>
       </div>
       {needsPhotos > 0 && (
