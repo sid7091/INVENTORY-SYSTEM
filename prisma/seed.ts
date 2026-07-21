@@ -45,9 +45,11 @@ async function main() {
 
     let created = 0;
     for (const r of rows) {
-      // Blocks flagged "PHOTOS PENDING" start in the photo gate; everything
-      // else that already lives on the ready-to-dispatch list is IN_STOCK.
-      const status = r.category === "PHOTOS_PENDING" ? "NEEDS_PHOTOS" : "IN_STOCK";
+      // The seed never attaches real photo files, so every block must start
+      // in the photo gate (NEEDS_PHOTOS) regardless of its spreadsheet
+      // category — the same rule createBlock() and the import route enforce.
+      // Add real photos afterward (single upload or the Bulk Photo Room) to
+      // release each block, exactly as it would work in normal use.
       await prisma.block.create({
         data: {
           blockNo: r.blockNo,
@@ -63,7 +65,7 @@ async function main() {
           totalSft: r.totalSft,
           thicknessMm: r.thicknessMm,
           category: r.category,
-          status,
+          // status omitted — defaults to NEEDS_PHOTOS per the schema.
         },
       });
       created++;

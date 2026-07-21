@@ -106,16 +106,32 @@ export async function deletePhoto(photoId: string): Promise<ActionResult> {
   if (!photo) return { ok: false, error: "Photo not found." };
   await prisma.$transaction(async (tx) => {
     await tx.photo.delete({ where: { id: photoId } });
-    // Deleting the primary photo must not leave the block with none — promote
-    // the oldest remaining photo so the inventory grid thumbnail doesn't vanish.
-    if (photo.isPrimary) {
-      const next = await tx.photo.findFirst({ where: { blockId: photo.blockId }, orderBy: { createdAt: "asc" } });
-      if (next) await tx.photo.update({ where: { id: next.id }, data: { isPrimary: true } });
+    const remaining = await tx.photo.findMany({ where: { blockId: photo.blockId }, orderBy: { createdAt: "asc" } });
+    if (remaining.length === 0) {
+      // Checkpoint: a block with zero photos must always sit back in the
+      // photo gate, however it lost its last photo — this is the one
+      // mutation that can take a block from "has a photo" to "has none".
+      const block = await tx.block.findUnique({ where: { id: photo.blockId } });
+      if (block && block.status !== "NEEDS_PHOTOS") {
+        await tx.block.update({ where: { id: photo.blockId }, data: { status: "NEEDS_PHOTOS", version: { increment: 1 } } });
+        await logAudit(tx, {
+          action: "STATUS_CHANGE",
+          userId: user.userId,
+          blockId: photo.blockId,
+          reason: "Returned to the photo gate: last photo removed",
+          changes: { status: { from: block.status, to: "NEEDS_PHOTOS" } },
+        });
+      }
+    } else if (photo.isPrimary) {
+      // Deleting the primary photo must not leave the block with none —
+      // promote the oldest remaining photo so the grid thumbnail doesn't vanish.
+      await tx.photo.update({ where: { id: remaining[0].id }, data: { isPrimary: true } });
     }
     await logAudit(tx, { action: "PHOTO_DELETE", userId: user.userId, blockId: photo.blockId, reason: `Photo removed: ${photo.filename}` });
   });
   revalidatePath(`/inventory/${photo.blockId}`);
   revalidatePath("/inventory");
+  revalidatePath("/needs-photos");
   return { ok: true };
 }
 

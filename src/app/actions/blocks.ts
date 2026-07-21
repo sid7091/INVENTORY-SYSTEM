@@ -107,10 +107,17 @@ export async function changeStatus(id: string, expectedVersion: number, raw: unk
   if (!parsed.success) return { ok: false, error: "A reason is required.", fieldErrors: zodErrors(parsed.error) };
   const { status, reason, pieces } = parsed.data;
 
-  const existing = await prisma.block.findUnique({ where: { id }, include: { allocations: true } });
+  const existing = await prisma.block.findUnique({
+    where: { id },
+    include: { allocations: true, _count: { select: { photos: true } } },
+  });
   if (!existing || existing.deletedAt) return { ok: false, error: "Block not found." };
-  if (existing.status === "NEEDS_PHOTOS") {
-    return { ok: false, error: "This block is still in the photo gate. Add a photo before setting a status." };
+  // Checkpoint: gate on the ACTUAL photo count, not the stored status label —
+  // this catches a block sitting on a live status with zero photos for any
+  // reason (stale data, a future bug), not just the ones currently flagged
+  // NEEDS_PHOTOS.
+  if (existing._count.photos === 0) {
+    return { ok: false, error: "This block has no photos yet. Add a photo before setting a status." };
   }
   if (existing.version !== expectedVersion) {
     return { ok: false, stale: true, error: `Block changed since you opened it (now v${existing.version}). Reload before changing status.` };

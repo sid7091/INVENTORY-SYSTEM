@@ -45,8 +45,11 @@ npm run dev                   # http://localhost:3000
 
 **Demo login:** `admin@eaglestone.com` / `helios123` (also `staff@eaglestone.com`).
 
-The seed imports `data/Ready_to_dispatch.xlsx` (224 real blocks). Two blocks
-tagged *Photos Pending* land in the photo gate to demonstrate the workflow.
+The seed imports `data/Ready_to_dispatch.xlsx` (224 real blocks). Since the
+seed never attaches real photo files, every block starts in the photo gate
+(`NEEDS_PHOTOS`) — the same rule that applies to any newly created or
+imported block — and only appears in live inventory once a real photo is
+added, via a single upload or the Bulk Photo Room.
 
 ## Scripts
 
