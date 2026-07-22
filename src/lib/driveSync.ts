@@ -21,9 +21,60 @@ export interface DriveSyncSummary {
   actionItemsResolved: number;
   actionItemsDismissed: number;
   error?: string;
+  capped?: boolean;
 }
 
 const MAX_PREVIEW_IMAGES = 12;
+// Safety backstop against an enormous or mis-shared Drive tree — each visited
+// folder costs one API call, so this bounds a single sync's worst case.
+const MAX_FOLDERS_VISITED = 3000;
+
+interface DriveBlockFolder {
+  folder: DriveFileMeta;
+  images: DriveFileMeta[];
+}
+
+// Walk the whole tree under the shared root, arbitrarily deep — the real
+// layout is root -> colour folder -> block folder -> images, but this makes
+// no assumption about depth. A folder is treated as a "block folder" the
+// moment it directly contains at least one image; folders that only contain
+// more folders (colour groupings) are transparently descended into instead.
+async function collectBlockFolders(
+  rootFolderId: string,
+  apiKey: string,
+): Promise<{ folders: DriveBlockFolder[]; foldersVisited: number; capped: boolean }> {
+  const result: DriveBlockFolder[] = [];
+  const rootChildren = await listChildren(rootFolderId, apiKey);
+  const queue: DriveFileMeta[] = rootChildren.filter(isDriveFolder);
+  let visited = 0;
+  let capped = false;
+
+  while (queue.length) {
+    if (visited >= MAX_FOLDERS_VISITED) {
+      capped = true;
+      break;
+    }
+    const folder = queue.shift()!;
+    visited++;
+    let children: DriveFileMeta[];
+    try {
+      children = await listChildren(folder.id, apiKey);
+    } catch {
+      continue; // one unreadable folder shouldn't abort the whole walk
+    }
+    const images = children.filter(isDriveImage);
+    if (images.length > 0) {
+      // This folder holds photos directly — it's a block folder. Don't
+      // descend further: a stray subfolder inside it (e.g. an "extra
+      // angles" album) shouldn't become its own, separately-unmatched entry.
+      result.push({ folder, images });
+    } else {
+      queue.push(...children.filter(isDriveFolder));
+    }
+  }
+
+  return { folders: result, foldersVisited: visited, capped };
+}
 
 // Import every not-yet-imported image in a Drive folder into a specific
 // block. Shared by the automatic sync (confident unique matches) and by
@@ -59,12 +110,14 @@ export async function importDriveFolderPhotos(folderId: string, blockId: string)
   return imported;
 }
 
-// Runs one full pass: list the configured Drive folder's immediate
-// subfolders (one per block), match each to a block by NUMBER ONLY (names
-// are explicitly unreliable — staff rename blocks), import new photos for
-// confident unique matches, and file a Needs Actions entry for anything
-// unmatched or ambiguous. Safe to call repeatedly — already-imported Drive
-// files are never re-imported (tracked via DriveImportedFile).
+// Runs one full pass: recursively walk every folder under the configured
+// Drive root (colour folders, block folders, however many levels deep),
+// treating any folder that directly holds images as one block's photo
+// folder. Matches each to a block by NUMBER ONLY (names are explicitly
+// unreliable — staff rename blocks), imports new photos for confident unique
+// matches, and files a Needs Actions entry for anything unmatched or
+// ambiguous. Safe to call repeatedly — already-imported Drive files are
+// never re-imported (tracked via DriveImportedFile).
 export async function runDriveSync(): Promise<DriveSyncSummary> {
   const summary: DriveSyncSummary = {
     foldersScanned: 0,
@@ -92,21 +145,21 @@ export async function runDriveSync(): Promise<DriveSyncSummary> {
     return summary;
   }
 
-  let children: DriveFileMeta[];
+  let walk: { folders: DriveBlockFolder[]; foldersVisited: number; capped: boolean };
   try {
-    children = await listChildren(rootFolderId, apiKey);
+    walk = await collectBlockFolders(rootFolderId, apiKey);
   } catch (e) {
     summary.error = e instanceof Error ? e.message : "Failed to read the Drive folder.";
     return summary;
   }
 
-  const subfolders = children.filter(isDriveFolder);
-  summary.foldersScanned = subfolders.length;
+  summary.foldersScanned = walk.folders.length;
+  if (walk.capped) summary.capped = true;
 
   const match = await buildBlockMatcherWithCandidates();
   const seenFolderIds = new Set<string>();
 
-  for (const folder of subfolders) {
+  for (const { folder, images: allImages } of walk.folders) {
     seenFolderIds.add(folder.id);
     const parsed = parsePhotoName(folder.name);
     const result = parsed ? match({ key: parsed.key, digits: parsed.digits }) : { blockId: null, candidateCount: 0 };
@@ -135,20 +188,14 @@ export async function runDriveSync(): Promise<DriveSyncSummary> {
 
     // No confident match — file (or refresh) a Needs Actions entry with
     // preview images so staff can confirm/assign the right block.
-    let files: DriveFileMeta[];
-    try {
-      files = (await listChildren(folder.id, apiKey)).filter(isDriveImage);
-    } catch {
-      files = [];
-    }
-    const images = files.slice(0, MAX_PREVIEW_IMAGES).map((f) => ({ fileId: f.id, name: f.name }));
+    const images = allImages.slice(0, MAX_PREVIEW_IMAGES).map((f) => ({ fileId: f.id, name: f.name }));
 
     const type = !parsed ? "DRIVE_UNMATCHED" : result.candidateCount > 1 ? "DRIVE_AMBIGUOUS" : "DRIVE_UNMATCHED";
     const message = !parsed
-      ? `The Drive folder "${folder.name}" doesn't look like it contains a block number. Confirm which block these ${files.length} photo(s) belong to.`
+      ? `The Drive folder "${folder.name}" doesn't look like it contains a block number. Confirm which block these ${allImages.length} photo(s) belong to.`
       : result.candidateCount > 1
-        ? `The Drive folder "${folder.name}" matches more than one block number. Confirm which block these ${files.length} photo(s) belong to.`
-        : `No block found matching the Drive folder "${folder.name}". Add this block, or confirm which existing block these ${files.length} photo(s) belong to.`;
+        ? `The Drive folder "${folder.name}" matches more than one block number. Confirm which block these ${allImages.length} photo(s) belong to.`
+        : `No block found matching the Drive folder "${folder.name}". Add this block, or confirm which existing block these ${allImages.length} photo(s) belong to.`;
 
     if (existingActionItem) {
       await prisma.actionItem.update({
