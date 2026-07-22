@@ -69,9 +69,9 @@ export function ImportWizard() {
         className="flex cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed border-tan-300 bg-cream-50 py-10 text-center hover:bg-cream-100"
       >
         <div className="text-3xl text-tan-400">⤓</div>
-        <p className="mt-2 text-sm font-medium text-brown-600">{loading ? "Parsing…" : file ? file.name : "Drop the Ready-to-Dispatch Excel file, or click to select"}</p>
+        <p className="mt-2 text-sm font-medium text-brown-600">{loading ? "Parsing…" : file ? file.name : "Drop the Ready-to-Dispatch Excel or CSV file, or click to select"}</p>
         <p className="text-xs text-brown-400">Pre-mapped to: BLOCK NO · QUARRY NO · COLOUR · EXPORTER · QUARRY · WEIGHT · L×H · PCS · END PCS · SFT · THICKNESS · CATEGORY</p>
-        <input ref={inputRef} type="file" accept=".xlsx,.xls" hidden onChange={(e) => e.target.files?.[0] && runPreview(e.target.files[0])} />
+        <input ref={inputRef} type="file" accept=".xlsx,.xls,.csv" hidden onChange={(e) => e.target.files?.[0] && runPreview(e.target.files[0])} />
       </div>
 
       {preview && (

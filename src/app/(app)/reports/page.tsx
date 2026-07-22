@@ -64,7 +64,7 @@ export default async function ReportsPage() {
         <Section title="Photo backlog" subtitle="Blocks still in the photo gate">
           <div className="flex items-center gap-4">
             <div className="text-4xl font-bold text-status-needsphotos">{formatNumber(needsPhotos, 0)}</div>
-            <Link href="/needs-photos" className="btn-secondary text-sm">Open queue →</Link>
+            <Link href="/needs-actions" className="btn-secondary text-sm">Open queue →</Link>
           </div>
         </Section>
 

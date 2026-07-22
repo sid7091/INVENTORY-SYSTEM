@@ -29,8 +29,9 @@ export async function middleware(req: NextRequest) {
 }
 
 export const config = {
-  // Protect all app routes; skip Next internals, API auth, uploaded files, and
-  // any static image (logo, favicon, etc.) — those must load even on /login,
-  // before a session exists.
-  matcher: ["/((?!_next/static|_next/image|favicon.ico|uploads|api/auth|.*\\.(?:png|jpg|jpeg|svg|ico|webp|gif)$).*)"],
+  // Protect all app routes; skip Next internals, API auth, uploaded files,
+  // the cron endpoint (authenticated with its own bearer secret, called by
+  // Vercel Cron — not a browser session), and any static image (logo,
+  // favicon, etc.) — those must load even on /login, before a session exists.
+  matcher: ["/((?!_next/static|_next/image|favicon.ico|uploads|api/auth|api/cron|.*\\.(?:png|jpg|jpeg|svg|ico|webp|gif)$).*)"],
 };

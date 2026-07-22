@@ -1,7 +1,9 @@
 import { PageHeader } from "@/components/PageHeader";
 import { DangerZone } from "@/components/DangerZone";
+import { DriveSyncSettings } from "@/components/DriveSyncSettings";
 import { requireUser } from "@/lib/auth";
 import { getDataCounts } from "@/app/actions/admin";
+import { getDriveSettings } from "@/app/actions/driveSettings";
 import { BRAND } from "@/lib/brand";
 
 export const dynamic = "force-dynamic";
@@ -22,12 +24,13 @@ export default async function AdminPage() {
     );
   }
 
-  const counts = await getDataCounts();
+  const [counts, driveSettings] = await Promise.all([getDataCounts(), getDriveSettings()]);
 
   return (
     <div>
       <PageHeader title="Admin" subtitle="Account and data management" />
       <div className="space-y-6 p-4 sm:p-6">
+        <DriveSyncSettings settings={driveSettings} />
         <DangerZone counts={counts} />
       </div>
     </div>

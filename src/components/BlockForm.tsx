@@ -72,7 +72,7 @@ export function BlockForm({ initial }: { initial?: BlockFormData }) {
     else res = await createBlock(payload);
 
     if (res.ok) {
-      toast(isEdit ? "Block updated." : "Block created — it's in the Needs Photos queue.", "success");
+      toast(isEdit ? "Block updated." : "Block created — it's in the Needs Actions queue.", "success");
       router.push(res.id ? `/inventory/${res.id}` : "/inventory");
       router.refresh();
     } else {
@@ -119,7 +119,7 @@ export function BlockForm({ initial }: { initial?: BlockFormData }) {
       <div className="flex items-center gap-3">
         <button type="submit" disabled={saving} className="btn-primary">{saving ? "Saving…" : isEdit ? "Save changes" : "Create block"}</button>
         <button type="button" className="btn-secondary" onClick={() => router.back()}>Cancel</button>
-        {!isEdit && <span className="text-xs text-brown-400">New blocks start in the Needs Photos queue.</span>}
+        {!isEdit && <span className="text-xs text-brown-400">New blocks start in the Needs Actions queue.</span>}
       </div>
     </form>
   );

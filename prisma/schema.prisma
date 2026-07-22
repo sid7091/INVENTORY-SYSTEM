@@ -67,6 +67,7 @@ model Block {
   photos      Photo[]
   auditLogs   AuditLog[]
   allocations PieceAllocation[]
+  actionItems ActionItem[]
 
   @@index([status])
   @@index([colour])
@@ -174,4 +175,56 @@ model AuditLog {
 
   @@index([blockId])
   @@index([createdAt])
+}
+
+// ---------------------------------------------------------------------------
+// App settings — small key/value store (e.g. the Google Drive folder link).
+// Configuration, not inventory data — the admin "Clear All Data" reset must
+// NOT wipe this.
+// ---------------------------------------------------------------------------
+
+model AppSetting {
+  key   String @id
+  value String
+}
+
+// ---------------------------------------------------------------------------
+// Needs Actions — a generalised inbox. A block sitting in the NEEDS_PHOTOS
+// gate is one kind of "needs action" (handled via Block.status, unchanged);
+// this table covers every other kind, chiefly Google Drive folders the
+// automatic sync couldn't confidently match to a block.
+// ---------------------------------------------------------------------------
+
+model ActionItem {
+  id     String  @id @default(cuid())
+  blockId String? // set once resolved to a specific block; null while unmatched
+  block   Block?  @relation(fields: [blockId], references: [id], onDelete: Cascade)
+
+  type    String // DRIVE_UNMATCHED | DRIVE_AMBIGUOUS | GENERAL
+  message String // human-readable: what's being asked
+
+  // Drive context, so a re-sync can find and update (not duplicate) this entry.
+  driveFolderId   String?
+  driveFolderName String?
+  images          String? // JSON array of {fileId, name} preview images from Drive
+
+  status     String    @default("OPEN") // OPEN | RESOLVED | DISMISSED
+  resolvedBy String?
+  resolvedAt DateTime?
+
+  createdAt DateTime @default(now())
+
+  @@index([blockId])
+  @@index([status])
+  @@index([driveFolderId])
+}
+
+// Tracks every Google Drive file already imported as a Photo, so the
+// automatic sync never re-imports (or duplicates) the same photo twice.
+model DriveImportedFile {
+  id          String   @id @default(cuid())
+  driveFileId String   @unique
+  blockId     String?
+  photoId     String?
+  createdAt   DateTime @default(now())
 }

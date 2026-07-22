@@ -48,7 +48,7 @@ export async function createBlock(raw: unknown): Promise<ActionResult> {
       return created;
     });
     revalidatePath("/inventory");
-    revalidatePath("/needs-photos");
+    revalidatePath("/needs-actions");
     return { ok: true, id: block.id };
   } catch (e) {
     return { ok: false, error: (e as Error).message };

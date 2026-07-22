@@ -5,78 +5,9 @@ import { requireUser } from "@/lib/auth";
 import { logAudit } from "@/lib/audit";
 import { savePhoto, stagePhoto, commitStaged, deleteStaged } from "@/lib/storage";
 import { parsePhotoName } from "@/lib/utils";
+import { buildBlockMatcher } from "@/lib/blockMatch";
+import { attachPhoto } from "@/lib/photoAttach";
 import type { ActionResult } from "./blocks";
-
-// Normalised, matchable form of a block number: uppercase alphanumerics only.
-function normKey(blockNo: string): string {
-  return blockNo.toUpperCase().replace(/[^A-Z0-9]/g, "");
-}
-function digitsOf(blockNo: string): string | null {
-  const m = blockNo.match(/\d{2,6}/g);
-  return m ? m[m.length - 1] : null;
-}
-
-type BlockKeyEntry = { id: string; blockNo: string; key: string; digits: string | null };
-
-// Build a matcher over all live blocks. Resolves a parsed filename token to a
-// block id, but ONLY when the match is unambiguous (exactly one candidate):
-//   1. exact normalised key   (ANW-M543.jpg  -> ANW-M543)
-//   2. block key ends with token key, when the token has letters (M543 -> ANW-M543)
-//   3. numeric equality, when the token is digits only (543 -> ANW-M543)
-async function buildBlockMatcher() {
-  const blocks = await prisma.block.findMany({
-    where: { deletedAt: null },
-    select: { id: true, blockNo: true },
-  });
-  const entries: BlockKeyEntry[] = blocks.map((b) => ({
-    id: b.id,
-    blockNo: b.blockNo,
-    key: normKey(b.blockNo),
-    digits: digitsOf(b.blockNo),
-  }));
-
-  return function match(token: { key: string; digits: string | null }): string | null {
-    const k = token.key;
-    let cands = entries.filter((e) => e.key === k);
-    if (!cands.length && /[A-Z]/.test(k) && /\d/.test(k)) {
-      cands = entries.filter((e) => e.key.endsWith(k));
-    }
-    if (!cands.length && token.digits) {
-      cands = entries.filter((e) => e.digits === token.digits);
-    }
-    return cands.length === 1 ? cands[0].id : null; // unique match only
-  };
-}
-
-// Attach a photo to a block. The FIRST photo auto-promotes the block out of the
-// NEEDS_PHOTOS gate into IN_STOCK (the "photo gate" rule).
-async function attachPhoto(
-  tx: import("@prisma/client").Prisma.TransactionClient,
-  blockId: string,
-  userId: string,
-  file: { url: string; filename: string },
-): Promise<{ promoted: boolean }> {
-  const block = await tx.block.findUnique({ where: { id: blockId }, include: { _count: { select: { photos: true } } } });
-  if (!block) throw new Error("Block not found");
-  const isFirst = block._count.photos === 0;
-  await tx.photo.create({
-    data: { blockId, url: file.url, filename: file.filename, isPrimary: isFirst },
-  });
-  let promoted = false;
-  if (block.status === "NEEDS_PHOTOS") {
-    await tx.block.update({ where: { id: blockId }, data: { status: "IN_STOCK", version: { increment: 1 } } });
-    await logAudit(tx, {
-      action: "STATUS_CHANGE",
-      userId,
-      blockId,
-      reason: "Auto-promoted: first photo attached (photo gate cleared)",
-      changes: { status: { from: "NEEDS_PHOTOS", to: "IN_STOCK" } },
-    });
-    promoted = true;
-  }
-  await logAudit(tx, { action: "PHOTO_ADD", userId, blockId, reason: `Photo added: ${file.filename}` });
-  return { promoted };
-}
 
 // Add one or more photos to a single block (used from the block detail page).
 export async function addBlockPhotos(blockId: string, formData: FormData): Promise<ActionResult> {
@@ -96,7 +27,7 @@ export async function addBlockPhotos(blockId: string, formData: FormData): Promi
 
   revalidatePath(`/inventory/${blockId}`);
   revalidatePath("/inventory");
-  revalidatePath("/needs-photos");
+  revalidatePath("/needs-actions");
   return { ok: true, id: blockId };
 }
 
@@ -131,7 +62,7 @@ export async function deletePhoto(photoId: string): Promise<ActionResult> {
   });
   revalidatePath(`/inventory/${photo.blockId}`);
   revalidatePath("/inventory");
-  revalidatePath("/needs-photos");
+  revalidatePath("/needs-actions");
   return { ok: true };
 }
 
@@ -243,7 +174,7 @@ export async function commitPhotoBatch(batchId: string): Promise<{ ok: true; com
 
   revalidatePath("/photo-room");
   revalidatePath("/inventory");
-  revalidatePath("/needs-photos");
+  revalidatePath("/needs-actions");
   return { ok: true, committed: committedFiles.length, promoted };
 }
 

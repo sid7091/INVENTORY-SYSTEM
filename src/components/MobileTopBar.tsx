@@ -4,10 +4,10 @@ import { BRAND } from "@/lib/brand";
 
 export function MobileTopBar({
   onOpenMenu,
-  needsPhotos,
+  needsActions,
 }: {
   onOpenMenu: () => void;
-  needsPhotos: number;
+  needsActions: number;
 }) {
   return (
     <header className="sticky top-0 z-30 flex items-center gap-3 border-b border-tan-200 bg-cream-50/95 px-3 py-2.5 backdrop-blur lg:hidden">
@@ -23,9 +23,9 @@ export function MobileTopBar({
         <img src={BRAND.logoUrl} alt={BRAND.name} className="h-8 w-8 object-contain" />
         <span className="font-serif text-base font-bold text-brown-800">{BRAND.short}</span>
       </div>
-      {needsPhotos > 0 && (
-        <Link href="/needs-photos" className="badge ml-auto bg-amber-200 text-amber-900">
-          {needsPhotos} needs photos
+      {needsActions > 0 && (
+        <Link href="/needs-actions" className="badge ml-auto bg-amber-200 text-amber-900">
+          {needsActions} need action
         </Link>
       )}
     </header>

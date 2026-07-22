@@ -12,18 +12,20 @@ export interface DataCounts {
   photos: number;
   photoBatches: number;
   auditLogs: number;
+  actionItems: number;
 }
 
 export async function getDataCounts(): Promise<DataCounts> {
   const user = await requireUser();
-  if (user.role !== "ADMIN") return { blocks: 0, photos: 0, photoBatches: 0, auditLogs: 0 };
-  const [blocks, photos, photoBatches, auditLogs] = await Promise.all([
+  if (user.role !== "ADMIN") return { blocks: 0, photos: 0, photoBatches: 0, auditLogs: 0, actionItems: 0 };
+  const [blocks, photos, photoBatches, auditLogs, actionItems] = await Promise.all([
     prisma.block.count(),
     prisma.photo.count(),
     prisma.photoBatch.count(),
     prisma.auditLog.count(),
+    prisma.actionItem.count(),
   ]);
-  return { blocks, photos, photoBatches, auditLogs };
+  return { blocks, photos, photoBatches, auditLogs, actionItems };
 }
 
 // Wipes every block, photo, piece allocation, photo batch and audit log entry.
@@ -42,12 +44,16 @@ export async function clearAllData(confirmText: string): Promise<ActionResult> {
   }
 
   // Explicit child-first deletion — safe regardless of DB-level cascade support.
+  // AppSetting is deliberately NOT wiped — it's configuration (the Drive
+  // folder link), not inventory data.
   await prisma.$transaction([
     prisma.pieceAllocation.deleteMany(),
     prisma.photo.deleteMany(),
     prisma.slab.deleteMany(),
     prisma.photoBatchItem.deleteMany(),
     prisma.photoBatch.deleteMany(),
+    prisma.actionItem.deleteMany(),
+    prisma.driveImportedFile.deleteMany(),
     prisma.auditLog.deleteMany(),
     prisma.block.deleteMany(),
   ]);

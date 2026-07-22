@@ -18,7 +18,7 @@ export function DangerZone({ counts }: { counts: DataCounts }) {
   const [clearing, setClearing] = useState(false);
   const [done, setDone] = useState(false);
 
-  const isEmpty = counts.blocks === 0 && counts.photos === 0 && counts.auditLogs === 0;
+  const isEmpty = counts.blocks === 0 && counts.photos === 0 && counts.auditLogs === 0 && counts.actionItems === 0;
   const matches = confirmText.trim() === CLEAR_DATA_CONFIRM_PHRASE;
 
   async function submit() {
@@ -50,6 +50,7 @@ export function DangerZone({ counts }: { counts: DataCounts }) {
           { label: "Photos", value: counts.photos },
           { label: "Photo batches", value: counts.photoBatches },
           { label: "Audit entries", value: counts.auditLogs },
+          { label: "Action items", value: counts.actionItems },
         ].map((s) => (
           <div key={s.label} className="rounded-md bg-cream-100 p-3 text-center">
             <div className="text-lg font-bold text-brown-800">{s.value}</div>
@@ -70,8 +71,8 @@ export function DangerZone({ counts }: { counts: DataCounts }) {
             <h2 className="font-serif text-lg font-bold text-status-damaged">Clear all data?</h2>
             <p className="mt-2 text-sm text-brown-600">
               This will permanently delete <strong>{plural(counts.blocks, "block")}</strong>, <strong>{plural(counts.photos, "photo")}</strong>,
-              and <strong>{plural(counts.auditLogs, "audit log entry", "audit log entries")}</strong>. This cannot be undone — it is not
-              recoverable from Trash. Staff accounts are not affected.
+              <strong> {plural(counts.auditLogs, "audit log entry", "audit log entries")}</strong>, and <strong>{plural(counts.actionItems, "Needs Actions item")}</strong>.
+              This cannot be undone — it is not recoverable from Trash. Staff accounts and your Google Drive folder link are not affected.
             </p>
             <div className="mt-4">
               <label className="label">
