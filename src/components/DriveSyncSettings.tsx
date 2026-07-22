@@ -45,9 +45,10 @@ export function DriveSyncSettings({ settings }: { settings: DriveSettingsView })
     <section className="card p-5">
       <h2 className="mb-1 font-serif text-base font-bold text-brown-800">Google Drive photo sync</h2>
       <p className="mb-4 text-sm text-brown-500">
-        Paste the shared Drive folder link — one subfolder per block, named with the block number. Runs
-        automatically every night; folders that don&apos;t confidently match a block show up in Needs Actions
-        with previews so staff can confirm.
+        Paste the shared Drive folder link. Any nested structure works (e.g. colour folders containing block
+        folders) — any folder that directly holds photos and has a block number in its name is treated as
+        that block&apos;s photos. Runs automatically every night; folders that don&apos;t confidently match a
+        block show up in Needs Actions with previews so staff can confirm.
       </p>
 
       {!settings.apiKeyConfigured && (
@@ -79,6 +80,9 @@ export function DriveSyncSettings({ settings }: { settings: DriveSettingsView })
             <> — {summary.foldersScanned} folder(s) scanned, {summary.photosImported} photo(s) imported, {summary.actionItemsCreated} new item(s), {summary.actionItemsResolved} resolved</>
           )}
           {summary?.error && <span className="text-status-damaged"> — {summary.error}</span>}
+          {summary?.capped && (
+            <span className="text-amber-700"> — stopped early after scanning a very large number of folders; run Sync now again to continue</span>
+          )}
         </p>
       )}
     </section>
