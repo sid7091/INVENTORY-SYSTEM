@@ -6,6 +6,7 @@ export const SETTING_KEYS = {
   driveFolderUrl: "driveFolderUrl",
   driveLastSyncAt: "driveLastSyncAt",
   driveLastSyncSummary: "driveLastSyncSummary",
+  driveSyncProgress: "driveSyncProgress",
 } as const;
 
 export async function getSetting(key: string): Promise<string | null> {

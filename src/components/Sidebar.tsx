@@ -17,6 +17,7 @@ const NAV: NavItem[] = [
   { href: "/inventory", label: "Inventory", icon: "▦" },
   { href: "/needs-actions", label: "Needs Actions", icon: "◫", badgeKey: "needsActions" },
   { href: "/photo-room", label: "Photo Room", icon: "⬆" },
+  { href: "/drive-sync", label: "Drive Sync", icon: "☁" },
   { href: "/import", label: "Import", icon: "⤓" },
   { href: "/reports", label: "Reports", icon: "▤" },
   { href: "/audit", label: "Audit Log", icon: "≣" },
