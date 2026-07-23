@@ -30,7 +30,7 @@ export function DriveSyncSettings({ settings }: { settings: DriveSettingsView })
     if (res.ok) {
       const s = res.summary;
       toast(
-        `Synced: ${s.foldersScanned} folder(s) scanned, ${s.photosImported} photo(s) imported, ${s.actionItemsCreated} new Needs Actions item(s).`,
+        `Synced: ${s.foldersScanned} folder(s) scanned, ${s.photosImported} photo(s) imported, ${s.actionItemsCreated} new item(s), ${s.actionItemsResolved} resolved.`,
         "success",
       );
       router.refresh();
@@ -46,9 +46,11 @@ export function DriveSyncSettings({ settings }: { settings: DriveSettingsView })
       <h2 className="mb-1 font-serif text-base font-bold text-brown-800">Google Drive photo sync</h2>
       <p className="mb-4 text-sm text-brown-500">
         Paste the shared Drive folder link. Any nested structure works (e.g. colour folders containing block
-        folders) — any folder that directly holds photos and has a block number in its name is treated as
-        that block&apos;s photos. Runs automatically every night; folders that don&apos;t confidently match a
-        block show up in Needs Actions with previews so staff can confirm.
+        folders) — a folder whose own name has a block number gets all its photos; loose photos with a block
+        number in the file name (not organised into a block folder) get matched individually too. Runs
+        automatically every night, and every run re-checks folders that didn&apos;t match yet — so a block added
+        after its photos were already in Drive gets linked up automatically next sync. Anything still unclear
+        shows up in Needs Actions with previews so staff can confirm.
       </p>
 
       {!settings.apiKeyConfigured && (
@@ -77,7 +79,10 @@ export function DriveSyncSettings({ settings }: { settings: DriveSettingsView })
         <p className="mt-3 text-xs text-brown-400">
           Last synced {new Date(settings.lastSyncAt).toLocaleString()}
           {summary && !summary.error && (
-            <> — {summary.foldersScanned} folder(s) scanned, {summary.photosImported} photo(s) imported, {summary.actionItemsCreated} new item(s), {summary.actionItemsResolved} resolved</>
+            <>
+              {" "}— {summary.foldersScanned} folder(s) scanned, {summary.photosImported} photo(s) imported, {summary.actionItemsCreated} new item(s), {summary.actionItemsResolved} resolved
+              {summary.skippedEmptyFolders.length > 0 && <>, {summary.skippedEmptyFolders.length} empty folder(s) skipped</>}
+            </>
           )}
           {summary?.error && <span className="text-status-damaged"> — {summary.error}</span>}
           {summary?.capped && (
