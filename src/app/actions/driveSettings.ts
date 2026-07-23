@@ -49,9 +49,11 @@ export async function saveDriveFolderUrl(url: string): Promise<ActionResult> {
   return { ok: true };
 }
 
+// Any signed-in staff member can trigger a sync (e.g. right after adding a
+// block whose photos were already sitting in Drive) — only the folder link
+// itself and the settings view are admin-restricted.
 export async function triggerDriveSyncNow(): Promise<{ ok: true; summary: DriveSyncSummary } | { ok: false; error: string }> {
-  const user = await requireUser();
-  if (user.role !== "ADMIN") return { ok: false, error: "Only admins can run a sync." };
+  await requireUser();
 
   const summary = await runDriveSync();
   revalidatePath("/admin");
