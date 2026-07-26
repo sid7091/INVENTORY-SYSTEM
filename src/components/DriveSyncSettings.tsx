@@ -30,10 +30,16 @@ export function DriveSyncSettings({ settings }: { settings: DriveSettingsView })
     setSyncing(false);
     if (res.ok) {
       const s = res.summary;
-      toast(
-        `Synced: ${s.foldersScanned} folder(s) scanned, ${s.photosImported} photo(s) imported, ${s.actionItemsCreated} new item(s), ${s.actionItemsResolved} resolved.`,
-        "success",
-      );
+      if (s.storageError) {
+        toast(`Photos cannot be saved: ${s.storageError}`, "error");
+      } else if (s.errorCount > 0) {
+        toast(`Synced with ${s.errorCount} error(s) — ${s.photosImported} photo(s) imported. See details below.`, "error");
+      } else {
+        toast(
+          `Synced: ${s.foldersScanned} folder(s) scanned, ${s.photosImported} photo(s) imported, ${s.actionItemsCreated} new item(s), ${s.actionItemsResolved} resolved.`,
+          "success",
+        );
+      }
       router.refresh();
     } else {
       toast(res.error, "error");
@@ -85,6 +91,26 @@ export function DriveSyncSettings({ settings }: { settings: DriveSettingsView })
       <div className="mt-4">
         <DriveSyncStatusBar />
       </div>
+
+      {summary?.storageError && (
+        <div className="mt-3 rounded-md bg-red-50 px-3 py-2 text-sm text-red-800">
+          <strong>Photos cannot be saved.</strong> {summary.storageError}
+        </div>
+      )}
+
+      {summary && summary.errorCount > 0 && (
+        <details className="mt-3 rounded-md bg-amber-50 px-3 py-2 text-sm text-amber-900">
+          <summary className="cursor-pointer font-medium">
+            {summary.errorCount} photo(s) failed to import — show details
+          </summary>
+          <ul className="mt-2 space-y-1 font-mono text-xs">
+            {summary.errors.map((e, i) => <li key={i}>{e}</li>)}
+          </ul>
+          {summary.errorCount > summary.errors.length && (
+            <p className="mt-1 text-xs">…and {summary.errorCount - summary.errors.length} more.</p>
+          )}
+        </details>
+      )}
 
       {settings.lastSyncAt && (
         <p className="mt-3 text-xs text-brown-400">

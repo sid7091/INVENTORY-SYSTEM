@@ -1,5 +1,6 @@
 import { PageHeader } from "@/components/PageHeader";
 import { DriveSyncSettings } from "@/components/DriveSyncSettings";
+import { DriveSyncDiagnostics } from "@/components/DriveSyncDiagnostics";
 import { getDriveSettings } from "@/app/actions/driveSettings";
 
 export const dynamic = "force-dynamic";
@@ -16,6 +17,7 @@ export default async function DriveSyncPage() {
       <PageHeader title="Drive Sync" subtitle="Import photos straight from your shared Google Drive folder" />
       <div className="space-y-6 p-4 sm:p-6">
         <DriveSyncSettings settings={settings} />
+        <DriveSyncDiagnostics />
       </div>
     </div>
   );

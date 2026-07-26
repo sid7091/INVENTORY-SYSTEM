@@ -80,6 +80,46 @@ export async function deleteStaged(tempUrl: string): Promise<void> {
   await fs.unlink(path.join(UPLOAD_DIR, rel)).catch(() => {});
 }
 
+export interface StorageCheck {
+  ok: boolean;
+  mode: "blob" | "local";
+  detail: string;
+}
+
+// Prove photo storage actually works, by writing a tiny file and deleting it.
+// This is the single most common production breakage: on a serverless host the
+// project filesystem is READ-ONLY, so without BLOB_READ_WRITE_TOKEN every
+// photo save fails. Surfacing it explicitly beats "photos just don't appear".
+export async function checkStorageWritable(): Promise<StorageCheck> {
+  const mode: "blob" | "local" = USE_BLOB ? "blob" : "local";
+  try {
+    const probe = Buffer.from("eagle-storage-probe");
+    const { url } = await savePhoto("_storage-probe.txt", probe);
+    // Clean the probe up; failing to delete it isn't a storage failure.
+    await deleteStaged(url).catch(() => {});
+    if (!USE_BLOB) {
+      const rel = url.replace(/^\/uploads\//, "");
+      await fs.unlink(path.join(UPLOAD_DIR, rel)).catch(() => {});
+    }
+    return {
+      ok: true,
+      mode,
+      detail: USE_BLOB
+        ? "Vercel Blob is connected — photos can be saved."
+        : "Writing to the local uploads folder — photos can be saved.",
+    };
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : String(e);
+    return {
+      ok: false,
+      mode,
+      detail: USE_BLOB
+        ? `Vercel Blob rejected a test write: ${msg}`
+        : `Cannot write photos to disk: ${msg}. On Vercel the project filesystem is read-only — create a Blob store (Storage → Create → Blob) so BLOB_READ_WRITE_TOKEN is set, then redeploy.`,
+    };
+  }
+}
+
 // Remove every stored photo (committed + staged). Used by the admin "clear all
 // data" reset. Best-effort — DB rows are the source of truth either way.
 export async function clearAllPhotoFiles(): Promise<void> {
