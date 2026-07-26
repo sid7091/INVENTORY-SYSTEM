@@ -3,6 +3,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { saveDriveFolderUrl, triggerDriveSyncNow, type DriveSettingsView } from "@/app/actions/driveSettings";
 import { useToast } from "@/components/ui/Toast";
+import { DriveSyncStatusBar } from "@/components/DriveSyncStatusBar";
 
 export function DriveSyncSettings({ settings }: { settings: DriveSettingsView }) {
   const router = useRouter();
@@ -47,10 +48,11 @@ export function DriveSyncSettings({ settings }: { settings: DriveSettingsView })
       <p className="mb-4 text-sm text-brown-500">
         Paste the shared Drive folder link. Any nested structure works (e.g. colour folders containing block
         folders) — a folder whose own name has a block number gets all its photos; loose photos with a block
-        number in the file name (not organised into a block folder) get matched individually too. Runs
-        automatically every night, and every run re-checks folders that didn&apos;t match yet — so a block added
-        after its photos were already in Drive gets linked up automatically next sync. Anything still unclear
-        shows up in Needs Actions with previews so staff can confirm.
+        number in the file name (not organised into a block folder) get matched individually too. Block numbers
+        in any format (M123, M-123, M_123) all resolve to the same block. Runs automatically every night, and
+        every run re-checks folders that didn&apos;t match yet — so a block added after its photos were already
+        in Drive gets linked up automatically next sync. Anything still unclear shows up in Needs Actions with
+        previews so staff can confirm.
       </p>
 
       {!settings.apiKeyConfigured && (
@@ -65,14 +67,23 @@ export function DriveSyncSettings({ settings }: { settings: DriveSettingsView })
           value={url}
           onChange={(e) => setUrl(e.target.value)}
           placeholder="https://drive.google.com/drive/folders/..."
-          disabled={saving}
+          disabled={saving || !settings.canEdit}
         />
-        <button className="btn-secondary text-sm" onClick={save} disabled={saving}>
-          {saving ? "Saving…" : "Save link"}
-        </button>
+        {settings.canEdit && (
+          <button className="btn-secondary text-sm" onClick={save} disabled={saving}>
+            {saving ? "Saving…" : "Save link"}
+          </button>
+        )}
         <button className="btn-primary text-sm" onClick={syncNow} disabled={syncing || !settings.folderUrl}>
           {syncing ? "Syncing…" : "Sync now"}
         </button>
+      </div>
+      {!settings.canEdit && (
+        <p className="mt-2 text-xs text-brown-400">Only admins can change the folder link — anyone can run a sync.</p>
+      )}
+
+      <div className="mt-4">
+        <DriveSyncStatusBar />
       </div>
 
       {settings.lastSyncAt && (

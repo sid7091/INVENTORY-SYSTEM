@@ -32,6 +32,7 @@ export interface ParsedPhotoName {
 // filename. A slab suffix is only recognised when it is SEPARATED from the
 // block number, so ten photos for one block all resolve to the same block:
 //   "ANW-M543.jpg"      -> { key: "ANWM543", digits: "543", slabNo: null }
+//   "ANW_M543.jpg"      -> { key: "ANWM543", digits: "543", slabNo: null }  (underscore separator, same key)
 //   "ANW-M543 1.jpg"    -> { key: "ANWM543", digits: "543", slabNo: "1" }
 //   "ANW-M543_2.jpg"    -> { key: "ANWM543", digits: "543", slabNo: "2" }
 //   "ANWM543 (3).png"   -> { key: "ANWM543", digits: "543", slabNo: "3" }
@@ -45,7 +46,7 @@ export function parsePhotoName(filename: string): ParsedPhotoName | null {
   // letter, then the digit run. The digit run is greedy so an unseparated
   // number stays part of the block (e.g. M1467), while a separated trailing
   // number is left for the slab match below.
-  const m = up.match(/([A-Z]{0,6})[-\s]?([A-Z])?(\d{2,6})/);
+  const m = up.match(/([A-Z]{0,6})[-_\s]?([A-Z])?(\d{2,6})/);
   if (!m) return null;
   const prefix = m[1] || "";
   const midLetter = m[2] || "";

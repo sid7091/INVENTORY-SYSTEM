@@ -1,17 +1,21 @@
 import { PageHeader } from "@/components/PageHeader";
 import { DangerZone } from "@/components/DangerZone";
-import { DriveSyncSettings } from "@/components/DriveSyncSettings";
+import { UsersRolesManager } from "@/components/UsersRolesManager";
 import { requireUser } from "@/lib/auth";
+import { getUserAccess } from "@/lib/permissions";
 import { getDataCounts } from "@/app/actions/admin";
-import { getDriveSettings } from "@/app/actions/driveSettings";
+import { getUsersAndRoles } from "@/app/actions/roles";
 import { BRAND } from "@/lib/brand";
 
 export const dynamic = "force-dynamic";
 
 export default async function AdminPage() {
   const user = await requireUser();
+  const access = await getUserAccess(user.userId);
+  const canUsers = access.permissions.has("admin.users");
+  const canData = access.permissions.has("admin.data");
 
-  if (user.role !== "ADMIN") {
+  if (!canUsers && !canData) {
     return (
       <div>
         <PageHeader title="Admin" />
@@ -24,14 +28,17 @@ export default async function AdminPage() {
     );
   }
 
-  const [counts, driveSettings] = await Promise.all([getDataCounts(), getDriveSettings()]);
+  const [counts, usersRoles] = await Promise.all([
+    canData ? getDataCounts() : null,
+    canUsers ? getUsersAndRoles() : null,
+  ]);
 
   return (
     <div>
-      <PageHeader title="Admin" subtitle="Account and data management" />
+      <PageHeader title="Admin" subtitle="Accounts, roles and data management" />
       <div className="space-y-6 p-4 sm:p-6">
-        <DriveSyncSettings settings={driveSettings} />
-        <DangerZone counts={counts} />
+        {usersRoles && <UsersRolesManager users={usersRoles.users} roles={usersRoles.roles} selfId={user.userId} />}
+        {counts && <DangerZone counts={counts} />}
       </div>
     </div>
   );

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { requireUser } from "@/lib/auth";
+import { checkPermission, PERMISSION_DENIED_MSG } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { parseWorkbook } from "@/lib/excel";
 import { logAudit, diff } from "@/lib/audit";
@@ -13,7 +13,8 @@ const IMPORT_KEYS = [
 // written. New blocks enter the photo gate (NEEDS_PHOTOS); existing blocks are
 // updated in place (status untouched).
 export async function POST(req: NextRequest) {
-  const user = await requireUser();
+  const user = await checkPermission("import.run");
+  if (!user) return NextResponse.json({ error: PERMISSION_DENIED_MSG }, { status: 403 });
   const form = await req.formData();
   const file = form.get("file");
   if (!(file instanceof File)) return NextResponse.json({ error: "No file uploaded." }, { status: 400 });

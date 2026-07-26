@@ -1,7 +1,7 @@
 "use server";
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
-import { requireUser } from "@/lib/auth";
+import { checkPermission, PERMISSION_DENIED_MSG } from "@/lib/auth";
 import { logAudit, diff } from "@/lib/audit";
 import { blockSchema, statusChangeSchema } from "@/lib/validation";
 import { parseRanges, normalizeRanges, rangesOverlap, rangesWithin, summarize, formatRanges, type Range } from "@/lib/pieces";
@@ -23,7 +23,8 @@ const EDITABLE_KEYS = [
 ];
 
 export async function createBlock(raw: unknown): Promise<ActionResult> {
-  const user = await requireUser();
+  const user = await checkPermission("blocks.create");
+  if (!user) return { ok: false, error: PERMISSION_DENIED_MSG };
   const parsed = blockSchema.safeParse(raw);
   if (!parsed.success) return { ok: false, error: "Please fix the highlighted fields.", fieldErrors: zodErrors(parsed.error) };
   const data = parsed.data;
@@ -56,7 +57,8 @@ export async function createBlock(raw: unknown): Promise<ActionResult> {
 }
 
 export async function updateBlock(id: string, expectedVersion: number, raw: unknown): Promise<ActionResult> {
-  const user = await requireUser();
+  const user = await checkPermission("blocks.edit");
+  if (!user) return { ok: false, error: PERMISSION_DENIED_MSG };
   const parsed = blockSchema.safeParse(raw);
   if (!parsed.success) return { ok: false, error: "Please fix the highlighted fields.", fieldErrors: zodErrors(parsed.error) };
   const data = parsed.data;
@@ -102,7 +104,8 @@ export async function updateBlock(id: string, expectedVersion: number, raw: unkn
 }
 
 export async function changeStatus(id: string, expectedVersion: number, raw: unknown): Promise<ActionResult> {
-  const user = await requireUser();
+  const user = await checkPermission("blocks.status");
+  if (!user) return { ok: false, error: PERMISSION_DENIED_MSG };
   const parsed = statusChangeSchema.safeParse(raw);
   if (!parsed.success) return { ok: false, error: "A reason is required.", fieldErrors: zodErrors(parsed.error) };
   const { status, reason, pieces } = parsed.data;
@@ -213,7 +216,8 @@ export async function changeStatus(id: string, expectedVersion: number, raw: unk
 }
 
 export async function softDeleteBlock(id: string, reason: string): Promise<ActionResult> {
-  const user = await requireUser();
+  const user = await checkPermission("blocks.delete");
+  if (!user) return { ok: false, error: PERMISSION_DENIED_MSG };
   if (!reason || reason.trim().length < 3) return { ok: false, error: "A reason is required to delete a block." };
   const existing = await prisma.block.findUnique({ where: { id } });
   if (!existing || existing.deletedAt) return { ok: false, error: "Block not found." };
@@ -227,7 +231,8 @@ export async function softDeleteBlock(id: string, reason: string): Promise<Actio
 }
 
 export async function restoreBlock(id: string): Promise<ActionResult> {
-  const user = await requireUser();
+  const user = await checkPermission("trash.manage");
+  if (!user) return { ok: false, error: PERMISSION_DENIED_MSG };
   const existing = await prisma.block.findUnique({ where: { id } });
   if (!existing || !existing.deletedAt) return { ok: false, error: "Block not found in trash." };
   await prisma.$transaction(async (tx) => {
@@ -240,8 +245,9 @@ export async function restoreBlock(id: string): Promise<ActionResult> {
 }
 
 export async function purgeBlock(id: string): Promise<ActionResult> {
-  const user = await requireUser();
-  if (user.role !== "ADMIN") return { ok: false, error: "Only admins can permanently delete blocks." };
+  // Permanent deletion needs BOTH trash access and the destructive-admin bit.
+  const user = (await checkPermission("trash.manage")) && (await checkPermission("admin.data"));
+  if (!user) return { ok: false, error: PERMISSION_DENIED_MSG };
   const existing = await prisma.block.findUnique({ where: { id } });
   if (!existing || !existing.deletedAt) return { ok: false, error: "Block not found in trash." };
   await prisma.block.delete({ where: { id } });

@@ -17,6 +17,7 @@ const NAV: NavItem[] = [
   { href: "/inventory", label: "Inventory", icon: "▦" },
   { href: "/needs-actions", label: "Needs Actions", icon: "◫", badgeKey: "needsActions" },
   { href: "/photo-room", label: "Photo Room", icon: "⬆" },
+  { href: "/drive-sync", label: "Drive Sync", icon: "☁" },
   { href: "/import", label: "Import", icon: "⤓" },
   { href: "/reports", label: "Reports", icon: "▤" },
   { href: "/audit", label: "Audit Log", icon: "≣" },
@@ -30,11 +31,13 @@ const ADMIN_NAV: NavItem[] = [{ href: "/admin", label: "Admin", icon: "⚙" }];
 export function Sidebar({
   user,
   counts,
+  allowedHrefs,
   open,
   onClose,
 }: {
   user: { name: string; email: string; role: string };
   counts: { needsActions: number };
+  allowedHrefs: string[];
   open: boolean;
   onClose: () => void;
 }) {
@@ -86,7 +89,7 @@ export function Sidebar({
         </div>
 
         <nav className="flex-1 space-y-1 overflow-y-auto p-3">
-          {(user.role === "ADMIN" ? [...NAV, ...ADMIN_NAV] : NAV).map((item) => {
+          {[...NAV, ...ADMIN_NAV].filter((item) => allowedHrefs.includes(item.href)).map((item) => {
             const active = item.href === "/" ? pathname === "/" : pathname.startsWith(item.href);
             const badge = item.badgeKey === "needsActions" ? counts.needsActions : 0;
             return (

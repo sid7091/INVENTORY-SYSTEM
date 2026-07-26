@@ -9,6 +9,8 @@ import { getSetting, SETTING_KEYS } from "@/lib/appSettings";
 import type { DriveSyncSummary } from "@/lib/driveSync";
 
 export const dynamic = "force-dynamic";
+// This page's Sync now button can also trigger a full Drive tree walk.
+export const maxDuration = 300;
 
 function SectionHeader({ title, count, accent }: { title: string; count: number; accent?: string }) {
   return (
@@ -32,17 +34,21 @@ export default async function NeedsActionsPage() {
     getSetting(SETTING_KEYS.driveLastSyncSummary),
   ]);
 
-  const driveItems = actionItems.map((item) => ({
+  const toDriveItem = (item: (typeof actionItems)[number]) => ({
     id: item.id,
     message: item.message,
     driveFolderName: item.driveFolderName,
     images: item.images ? JSON.parse(item.images) : [],
-  }));
+  });
+  // No block found at all — staff needs to supply/create a block number.
+  const needBlockNumber = actionItems.filter((i) => i.type === "DRIVE_UNMATCHED").map(toDriveItem);
+  // The folder/file matched more than one candidate block — staff needs to pick which one.
+  const needBlockNumberQuestions = actionItems.filter((i) => i.type === "DRIVE_AMBIGUOUS").map(toDriveItem);
 
   const lastSyncSummary: DriveSyncSummary | null = lastSyncSummaryRaw ? JSON.parse(lastSyncSummaryRaw) : null;
   const skippedFolders = lastSyncSummary?.skippedEmptyFolders ?? [];
 
-  const total = blocks.length + driveItems.length;
+  const total = blocks.length + actionItems.length;
 
   return (
     <div>
@@ -58,9 +64,16 @@ export default async function NeedsActionsPage() {
       />
       <div className="space-y-6 p-4 sm:p-6">
         <details open className="card overflow-hidden">
-          <SectionHeader title="Block number discrepancies" count={driveItems.length} />
+          <SectionHeader title="Need block number" count={needBlockNumber.length} />
           <div className="border-t border-tan-200 p-4">
-            <DriveActionItemsList items={driveItems} />
+            <DriveActionItemsList items={needBlockNumber} />
+          </div>
+        </details>
+
+        <details open className="card overflow-hidden">
+          <SectionHeader title="Need block number — multiple matches" count={needBlockNumberQuestions.length} />
+          <div className="border-t border-tan-200 p-4">
+            <DriveActionItemsList items={needBlockNumberQuestions} />
           </div>
         </details>
 

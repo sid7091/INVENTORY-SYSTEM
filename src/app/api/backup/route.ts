@@ -1,4 +1,5 @@
-import { requireUser } from "@/lib/auth";
+import { NextResponse } from "next/server";
+import { checkPermission, PERMISSION_DENIED_MSG } from "@/lib/auth";
 import { promises as fs } from "fs";
 import path from "path";
 import { brandSlug } from "@/lib/brand";
@@ -6,7 +7,8 @@ import { brandSlug } from "@/lib/brand";
 // On-demand backup: streams the SQLite database file as a download. Combined
 // with scripts/backup.ts (cron) this covers the daily-backup requirement.
 export async function GET() {
-  const user = await requireUser();
+  const user = await checkPermission("admin.data");
+  if (!user) return NextResponse.json({ error: PERMISSION_DENIED_MSG }, { status: 403 });
   if (user.role !== "ADMIN") return new Response("Forbidden", { status: 403 });
 
   const dbPath = path.join(process.cwd(), "prisma", "dev.db");

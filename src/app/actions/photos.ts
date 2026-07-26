@@ -1,7 +1,7 @@
 "use server";
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
-import { requireUser } from "@/lib/auth";
+import { requireUser, checkPermission, PERMISSION_DENIED_MSG } from "@/lib/auth";
 import { logAudit } from "@/lib/audit";
 import { savePhoto, stagePhoto, commitStaged, deleteStaged } from "@/lib/storage";
 import { parsePhotoName } from "@/lib/utils";
@@ -11,7 +11,8 @@ import type { ActionResult } from "./blocks";
 
 // Add one or more photos to a single block (used from the block detail page).
 export async function addBlockPhotos(blockId: string, formData: FormData): Promise<ActionResult> {
-  const user = await requireUser();
+  const user = await checkPermission("photos.add");
+  if (!user) return { ok: false, error: PERMISSION_DENIED_MSG };
   const files = formData.getAll("photos").filter((f): f is File => f instanceof File && f.size > 0);
   if (files.length === 0) return { ok: false, error: "No files selected." };
 
@@ -32,7 +33,8 @@ export async function addBlockPhotos(blockId: string, formData: FormData): Promi
 }
 
 export async function deletePhoto(photoId: string): Promise<ActionResult> {
-  const user = await requireUser();
+  const user = await checkPermission("photos.add");
+  if (!user) return { ok: false, error: PERMISSION_DENIED_MSG };
   const photo = await prisma.photo.findUnique({ where: { id: photoId } });
   if (!photo) return { ok: false, error: "Photo not found." };
   await prisma.$transaction(async (tx) => {
@@ -72,7 +74,8 @@ export async function deletePhoto(photoId: string): Promise<ActionResult> {
 
 // Stage dropped files into a review batch. Auto-matches filename -> block number.
 export async function createPhotoBatch(formData: FormData): Promise<{ ok: true; batchId: string } | { ok: false; error: string }> {
-  const user = await requireUser();
+  const user = await checkPermission("photoroom.use");
+  if (!user) return { ok: false, error: PERMISSION_DENIED_MSG };
   const files = formData.getAll("photos").filter((f): f is File => f instanceof File && f.size > 0);
   if (files.length === 0) return { ok: false, error: "No files selected." };
 
@@ -106,7 +109,7 @@ export async function updatePhotoItem(
   decision: "APPROVE" | "SKIP" | "REJECT" | "REASSIGN" | "PENDING",
   reassignBlockNo?: string,
 ): Promise<ActionResult> {
-  await requireUser();
+  if (!(await checkPermission("photoroom.use"))) return { ok: false, error: PERMISSION_DENIED_MSG };
   const item = await prisma.photoBatchItem.findUnique({ where: { id: itemId } });
   if (!item) return { ok: false, error: "Item not found." };
 
@@ -143,7 +146,8 @@ export async function updatePhotoItem(
 // Commit the batch: only APPROVE items become real photos. Skipped/rejected are
 // discarded. Runs in one transaction — nothing commits until approved.
 export async function commitPhotoBatch(batchId: string): Promise<{ ok: true; committed: number; promoted: number } | { ok: false; error: string }> {
-  const user = await requireUser();
+  const user = await checkPermission("photoroom.use");
+  if (!user) return { ok: false, error: PERMISSION_DENIED_MSG };
   const batch = await prisma.photoBatch.findUnique({ where: { id: batchId }, include: { items: true } });
   if (!batch) return { ok: false, error: "Batch not found." };
   if (batch.status !== "REVIEW") return { ok: false, error: "This batch has already been processed." };
@@ -179,7 +183,7 @@ export async function commitPhotoBatch(batchId: string): Promise<{ ok: true; com
 }
 
 export async function discardPhotoBatch(batchId: string): Promise<ActionResult> {
-  await requireUser();
+  if (!(await checkPermission("photoroom.use"))) return { ok: false, error: PERMISSION_DENIED_MSG };
   const batch = await prisma.photoBatch.findUnique({ where: { id: batchId }, include: { items: true } });
   if (!batch) return { ok: false, error: "Batch not found." };
   for (const item of batch.items) await deleteStaged(item.tempUrl);

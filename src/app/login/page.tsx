@@ -1,10 +1,13 @@
 import { Suspense } from "react";
 import { LoginForm } from "./LoginForm";
 import { BRAND } from "@/lib/brand";
+import { getLang } from "@/lib/i18nServer";
+import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 
 export const dynamic = "force-dynamic";
 
-export default function LoginPage() {
+export default async function LoginPage() {
+  const lang = await getLang();
   return (
     <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-cream-100 via-cream-50 to-cream-200 px-4">
       <div className="w-full max-w-sm">
@@ -14,8 +17,11 @@ export default function LoginPage() {
           <p className="text-sm text-brown-500">Inventory · Staff sign-in</p>
         </div>
         <div className="card p-6">
+          <div className="mb-4 flex justify-center">
+            <LanguageSwitcher current={lang} size="lg" />
+          </div>
           <Suspense fallback={<div className="text-center text-sm text-brown-400">Loading…</div>}>
-            <LoginForm />
+            <LoginForm lang={lang} />
           </Suspense>
         </div>
         <p className="mt-6 text-center text-xs text-brown-400">

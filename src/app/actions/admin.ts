@@ -1,7 +1,7 @@
 "use server";
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
-import { requireUser } from "@/lib/auth";
+import { requireUser, checkPermission, PERMISSION_DENIED_MSG } from "@/lib/auth";
 import { logAudit } from "@/lib/audit";
 import { clearAllPhotoFiles } from "@/lib/storage";
 import { CLEAR_DATA_CONFIRM_PHRASE } from "@/lib/constants";
@@ -16,8 +16,8 @@ export interface DataCounts {
 }
 
 export async function getDataCounts(): Promise<DataCounts> {
-  const user = await requireUser();
-  if (user.role !== "ADMIN") return { blocks: 0, photos: 0, photoBatches: 0, auditLogs: 0, actionItems: 0 };
+  const user = await checkPermission("admin.data");
+  if (!user) return { blocks: 0, photos: 0, photoBatches: 0, auditLogs: 0, actionItems: 0 };
   const [blocks, photos, photoBatches, auditLogs, actionItems] = await Promise.all([
     prisma.block.count(),
     prisma.photo.count(),
@@ -32,8 +32,8 @@ export async function getDataCounts(): Promise<DataCounts> {
 // User accounts are intentionally preserved — this is a data reset, not a
 // factory reset, and staff must still be able to log back in afterwards.
 export async function clearAllData(confirmText: string): Promise<ActionResult> {
-  const user = await requireUser();
-  if (user.role !== "ADMIN") return { ok: false, error: "Only admins can clear all data." };
+  const user = await checkPermission("admin.data");
+  if (!user) return { ok: false, error: PERMISSION_DENIED_MSG };
   if (confirmText.trim() !== CLEAR_DATA_CONFIRM_PHRASE) {
     return { ok: false, error: `Type "${CLEAR_DATA_CONFIRM_PHRASE}" exactly to confirm.` };
   }
