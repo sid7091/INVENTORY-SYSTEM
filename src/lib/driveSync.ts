@@ -1,6 +1,6 @@
 import "server-only";
 import { prisma } from "@/lib/prisma";
-import { savePhoto } from "@/lib/storage";
+import { savePhoto, checkStorageWritable } from "@/lib/storage";
 import { attachPhoto } from "@/lib/photoAttach";
 import { parsePhotoName } from "@/lib/utils";
 import { buildBlockMatcherWithCandidates } from "@/lib/blockMatch";
@@ -14,8 +14,20 @@ export interface DriveSyncSummary {
   actionItemsResolved: number;
   actionItemsDismissed: number;
   skippedEmptyFolders: string[];
+  /** Per-file/per-folder failures, so a misconfiguration is visible instead of silent. */
+  errors: string[];
+  /** How many failures happened in total (errors[] is truncated for display). */
+  errorCount: number;
+  /** Set when photo storage itself is broken — every import would fail. */
+  storageError?: string;
   error?: string;
   capped?: boolean;
+}
+
+const MAX_RECORDED_ERRORS = 50;
+
+function recordError(errors: string[], message: string): void {
+  if (errors.length < MAX_RECORDED_ERRORS) errors.push(message);
 }
 
 export interface DriveSyncProgress {
@@ -109,28 +121,37 @@ async function collectAllImages(
 // Import a specific, already-identified set of Drive files into a block.
 // Skips any file already imported (tracked via DriveImportedFile), so it's
 // always safe to call again with an overlapping file list.
-async function importDriveFiles(files: DriveFileMeta[], blockId: string, apiKey: string): Promise<number> {
+//
+// Every per-file failure is RECORDED, not swallowed: a storage misconfiguration
+// (read-only filesystem with no Blob store) fails on every single photo, and
+// silently skipping those made it look like the sync simply did nothing.
+async function importDriveFiles(
+  files: DriveFileMeta[],
+  blockId: string,
+  apiKey: string,
+  errors: string[],
+  folderName: string,
+): Promise<number> {
   let imported = 0;
   for (const file of files) {
     const already = await prisma.driveImportedFile.findUnique({ where: { driveFileId: file.id } });
     if (already) continue;
-    let bytes: Buffer;
     try {
-      bytes = await downloadDriveFile(file.id, apiKey);
-    } catch {
-      continue;
-    }
-    const saved = await savePhoto(file.name, bytes);
-    const photoId = await prisma.$transaction(async (tx) => {
-      await attachPhoto(tx, blockId, null, saved);
-      const photo = await tx.photo.findFirst({
-        where: { blockId, filename: saved.filename },
-        orderBy: { createdAt: "desc" },
+      const bytes = await downloadDriveFile(file.id, apiKey);
+      const saved = await savePhoto(file.name, bytes);
+      const photoId = await prisma.$transaction(async (tx) => {
+        await attachPhoto(tx, blockId, null, saved);
+        const photo = await tx.photo.findFirst({
+          where: { blockId, filename: saved.filename },
+          orderBy: { createdAt: "desc" },
+        });
+        return photo?.id ?? null;
       });
-      return photo?.id ?? null;
-    });
-    await prisma.driveImportedFile.create({ data: { driveFileId: file.id, blockId, photoId } });
-    imported++;
+      await prisma.driveImportedFile.create({ data: { driveFileId: file.id, blockId, photoId } });
+      imported++;
+    } catch (e) {
+      recordError(errors, `${folderName}/${file.name}: ${e instanceof Error ? e.message : String(e)}`);
+    }
   }
   return imported;
 }
@@ -143,7 +164,11 @@ export async function importDriveFolderPhotos(folderId: string, blockId: string)
   const apiKey = process.env.GOOGLE_DRIVE_API_KEY;
   if (!apiKey) throw new Error("GOOGLE_DRIVE_API_KEY is not configured.");
   const files = (await listChildren(folderId, apiKey)).filter(isDriveImage);
-  return importDriveFiles(files, blockId, apiKey);
+  const errors: string[] = [];
+  const imported = await importDriveFiles(files, blockId, apiKey, errors, "folder");
+  // Manual assignment is interactive — a failure must be shown, not counted.
+  if (imported === 0 && errors.length > 0) throw new Error(errors[0]);
+  return imported;
 }
 
 // Runs one full pass over the configured Drive folder. Two-tier matching per
@@ -167,7 +192,11 @@ export async function runDriveSync(): Promise<DriveSyncSummary> {
     actionItemsResolved: 0,
     actionItemsDismissed: 0,
     skippedEmptyFolders: [],
+    errors: [],
+    errorCount: 0,
   };
+  const errors: string[] = [];
+  let errorCount = 0;
   const startedAt = new Date().toISOString();
 
   const apiKey = process.env.GOOGLE_DRIVE_API_KEY;
@@ -189,7 +218,13 @@ export async function runDriveSync(): Promise<DriveSyncSummary> {
   }
 
   try {
-    await writeProgress({ running: true, phase: "Starting", current: null, processed: 0, total: 0, startedAt }, true);
+    await writeProgress({ running: true, phase: "Checking photo storage", current: null, processed: 0, total: 0, startedAt }, true);
+
+    // Prove we can actually save a photo before downloading hundreds of them.
+    // Without this, a read-only filesystem fails on every single file and the
+    // sync looks like it silently did nothing.
+    const storage = await checkStorageWritable();
+    if (!storage.ok) summary.storageError = storage.detail;
 
     let walk: Awaited<ReturnType<typeof collectAllImages>>;
     try {
@@ -240,7 +275,9 @@ export async function runDriveSync(): Promise<DriveSyncSummary> {
 
       if (folderMatch.blockId) {
         try {
-          summary.photosImported += await importDriveFiles(files, folderMatch.blockId, apiKey);
+          const before = errors.length;
+          summary.photosImported += await importDriveFiles(files, folderMatch.blockId, apiKey, errors, folder.name);
+          errorCount += errors.length - before;
         } catch {
           continue; // one bad folder shouldn't abort the whole sync
         }
@@ -263,7 +300,10 @@ export async function runDriveSync(): Promise<DriveSyncSummary> {
           : { blockId: null, candidateCount: 0 };
         if (fileMatch.blockId) {
           try {
-            summary.photosImported += await importDriveFiles([file], fileMatch.blockId, apiKey);
+            const before = errors.length;
+            summary.photosImported += await importDriveFiles([file], fileMatch.blockId, apiKey, errors, folder.name);
+            errorCount += errors.length - before;
+            if (errors.length > before) unresolved.push(file);
           } catch {
             unresolved.push(file);
           }
@@ -322,6 +362,9 @@ export async function runDriveSync(): Promise<DriveSyncSummary> {
         summary.actionItemsDismissed++;
       }
     }
+
+    summary.errors = errors;
+    summary.errorCount = errorCount;
 
     await setSetting(SETTING_KEYS.driveLastSyncAt, new Date().toISOString());
     await setSetting(SETTING_KEYS.driveLastSyncSummary, JSON.stringify(summary));

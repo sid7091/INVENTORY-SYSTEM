@@ -5,6 +5,7 @@ import { hasPermission } from "@/lib/permissions";
 import { getSetting, setSetting, SETTING_KEYS } from "@/lib/appSettings";
 import { extractFolderId } from "@/lib/drive";
 import { runDriveSync, type DriveSyncSummary, type DriveSyncProgress } from "@/lib/driveSync";
+import type { DriveDiagnostics } from "@/lib/driveDiagnostics";
 import type { ActionResult } from "./blocks";
 
 export interface DriveSettingsView {
@@ -70,4 +71,12 @@ export async function triggerDriveSyncNow(): Promise<{ ok: true; summary: DriveS
   revalidatePath("/needs-actions");
   if (summary.error) return { ok: false, error: summary.error };
   return { ok: true, summary };
+}
+
+// Read-only "why didn't this work" report — no downloads, no photo saves, no
+// ActionItem writes. Stored in memory only; the CSV route re-runs it.
+export async function runDriveTest(): Promise<{ ok: true; report: DriveDiagnostics } | { ok: false; error: string }> {
+  if (!(await checkPermission("drivesync.run"))) return { ok: false, error: PERMISSION_DENIED_MSG };
+  const { runDriveDiagnostics } = await import("@/lib/driveDiagnostics");
+  return { ok: true, report: await runDriveDiagnostics() };
 }
