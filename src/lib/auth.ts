@@ -19,6 +19,18 @@ export async function requireUser(): Promise<SessionPayload> {
   return session;
 }
 
+export const PERMISSION_DENIED_MSG = "You don't have permission to do this. Ask an admin.";
+
+// Capability check for server actions and API routes. Resolves from the DB
+// (not the JWT) so role edits apply immediately. Returns the session when
+// allowed, or null — callers turn that into { ok:false } / a 403 (a thrown
+// error would be redacted by Next in production).
+export async function checkPermission(capability: string): Promise<SessionPayload | null> {
+  const session = await requireUser();
+  const { hasPermission } = await import("./permissions");
+  return (await hasPermission(session.userId, capability)) ? session : null;
+}
+
 export async function authenticate(
   email: string,
   password: string,

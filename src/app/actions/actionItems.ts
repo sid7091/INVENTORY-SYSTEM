@@ -1,7 +1,7 @@
 "use server";
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
-import { requireUser } from "@/lib/auth";
+import { checkPermission, PERMISSION_DENIED_MSG } from "@/lib/auth";
 import type { SessionPayload } from "@/lib/session";
 import { logAudit } from "@/lib/audit";
 import { importDriveFolderPhotos } from "@/lib/driveSync";
@@ -62,7 +62,8 @@ async function resolveOne(itemId: string, blockNoInput: string, user: SessionPay
 // from that folder into the chosen block right away, rather than waiting
 // for the next scheduled sync.
 export async function resolveActionItem(itemId: string, blockNoInput: string): Promise<ActionResult> {
-  const user = await requireUser();
+  const user = await checkPermission("needsactions.resolve");
+  if (!user) return { ok: false, error: PERMISSION_DENIED_MSG };
   const res = await resolveOne(itemId, blockNoInput, user);
   revalidatePath("/needs-actions");
   if (res.ok && res.id) {
@@ -77,7 +78,8 @@ export async function resolveActionItem(itemId: string, blockNoInput: string): P
 export async function resolveActionItemsBulk(
   items: { itemId: string; blockNo: string }[],
 ): Promise<{ ok: true; resolved: number; failed: { itemId: string; error: string }[] }> {
-  const user = await requireUser();
+  const user = await checkPermission("needsactions.resolve");
+  if (!user) return { ok: true, resolved: 0, failed: items.map((i) => ({ itemId: i.itemId, error: PERMISSION_DENIED_MSG })) };
   const failed: { itemId: string; error: string }[] = [];
   let resolved = 0;
 
@@ -95,7 +97,8 @@ export async function resolveActionItemsBulk(
 // Dismiss an action item with no photo import (e.g. the folder is not
 // actually one of our blocks).
 export async function dismissActionItem(itemId: string): Promise<ActionResult> {
-  const user = await requireUser();
+  const user = await checkPermission("needsactions.resolve");
+  if (!user) return { ok: false, error: PERMISSION_DENIED_MSG };
   const item = await prisma.actionItem.findUnique({ where: { id: itemId } });
   if (!item) return { ok: false, error: "This item no longer exists." };
   if (item.status !== "OPEN") return { ok: false, error: "This item has already been handled." };
@@ -111,7 +114,8 @@ export async function dismissActionItem(itemId: string): Promise<ActionResult> {
 // Batch dismiss — same idea as resolveActionItemsBulk but for "not one of
 // our blocks, drop it" decisions made across several items at once.
 export async function dismissActionItemsBulk(itemIds: string[]): Promise<{ ok: true; dismissed: number }> {
-  const user = await requireUser();
+  const user = await checkPermission("needsactions.resolve");
+  if (!user) return { ok: true, dismissed: 0 };
   const res = await prisma.actionItem.updateMany({
     where: { id: { in: itemIds }, status: "OPEN" },
     data: { status: "DISMISSED", resolvedBy: user.name, resolvedAt: new Date() },

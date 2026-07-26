@@ -1,6 +1,7 @@
 "use server";
 import { revalidatePath } from "next/cache";
-import { requireUser } from "@/lib/auth";
+import { requireUser, checkPermission, PERMISSION_DENIED_MSG } from "@/lib/auth";
+import { hasPermission } from "@/lib/permissions";
 import { getSetting, setSetting, SETTING_KEYS } from "@/lib/appSettings";
 import { extractFolderId } from "@/lib/drive";
 import { runDriveSync, type DriveSyncSummary, type DriveSyncProgress } from "@/lib/driveSync";
@@ -28,7 +29,7 @@ export async function getDriveSettings(): Promise<DriveSettingsView> {
     apiKeyConfigured: !!process.env.GOOGLE_DRIVE_API_KEY,
     lastSyncAt,
     lastSyncSummary: lastSyncSummaryRaw ? JSON.parse(lastSyncSummaryRaw) : null,
-    canEdit: user.role === "ADMIN",
+    canEdit: await hasPermission(user.userId, "drivesync.configure"),
   };
 }
 
@@ -41,8 +42,8 @@ export async function getDriveSyncProgress(): Promise<DriveSyncProgress | null> 
 }
 
 export async function saveDriveFolderUrl(url: string): Promise<ActionResult> {
-  const user = await requireUser();
-  if (user.role !== "ADMIN") return { ok: false, error: "Only admins can change the Drive folder link." };
+  const user = await checkPermission("drivesync.configure");
+  if (!user) return { ok: false, error: PERMISSION_DENIED_MSG };
 
   const trimmed = url.trim();
   if (!trimmed) {
@@ -62,7 +63,7 @@ export async function saveDriveFolderUrl(url: string): Promise<ActionResult> {
 // block whose photos were already sitting in Drive) — only the folder link
 // itself and who can edit it stay admin-restricted.
 export async function triggerDriveSyncNow(): Promise<{ ok: true; summary: DriveSyncSummary } | { ok: false; error: string }> {
-  await requireUser();
+  if (!(await checkPermission("drivesync.run"))) return { ok: false, error: PERMISSION_DENIED_MSG };
 
   const summary = await runDriveSync();
   revalidatePath("/drive-sync");

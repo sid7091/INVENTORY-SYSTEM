@@ -20,12 +20,32 @@ model User {
   email        String   @unique
   name         String
   passwordHash String
-  role         String   @default("STAFF") // STAFF | ADMIN
+  // Legacy coarse role, kept as a fallback for accounts created before the
+  // Role table existed: STAFF | ADMIN. New accounts always get a roleId.
+  role         String   @default("STAFF")
+  roleId       String?
+  roleRef      Role?    @relation(fields: [roleId], references: [id], onDelete: SetNull)
   active       Boolean  @default(true)
   createdAt    DateTime @default(now())
 
   auditLogs    AuditLog[]
   photoBatches PhotoBatch[]
+}
+
+// Configurable roles. Worker / Staff / Admin ship as presets (isPreset), and
+// admins can create their own with any mix of capabilities. `permissions` is
+// a JSON array of capability keys (see src/lib/permissions.ts). `uiMode`
+// decides which experience the user lands in: "simple" is the icon-first
+// factory-floor UI, "full" is the complete management app.
+model Role {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  permissions String // JSON array of capability keys
+  uiMode      String   @default("full") // full | simple
+  isPreset    Boolean  @default(false)
+  createdAt   DateTime @default(now())
+
+  users User[]
 }
 
 // ---------------------------------------------------------------------------

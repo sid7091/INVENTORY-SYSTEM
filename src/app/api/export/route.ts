@@ -1,5 +1,5 @@
-import { NextRequest } from "next/server";
-import { requireUser } from "@/lib/auth";
+import { NextRequest, NextResponse } from "next/server";
+import { checkPermission, PERMISSION_DENIED_MSG } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { buildExportWorkbook } from "@/lib/excel";
 import { buildWhere, type BlockFilters } from "@/lib/blocks";
@@ -7,7 +7,8 @@ import { brandSlug } from "@/lib/brand";
 
 // Export the current (filtered) inventory to the Ready-to-Dispatch Excel layout.
 export async function GET(req: NextRequest) {
-  await requireUser();
+  const user = await checkPermission("export.run");
+  if (!user) return NextResponse.json({ error: PERMISSION_DENIED_MSG }, { status: 403 });
   const sp = req.nextUrl.searchParams;
   const filters: BlockFilters = {
     q: sp.get("q") ?? undefined,

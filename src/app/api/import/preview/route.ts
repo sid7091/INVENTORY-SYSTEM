@@ -1,12 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
-import { requireUser } from "@/lib/auth";
+import { checkPermission, PERMISSION_DENIED_MSG } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { parseWorkbook } from "@/lib/excel";
 
 // Dry-run: parse the uploaded workbook, validate, and classify each row as a
 // NEW block or an UPDATE to an existing one. No writes happen here.
 export async function POST(req: NextRequest) {
-  await requireUser();
+  const user = await checkPermission("import.run");
+  if (!user) return NextResponse.json({ error: PERMISSION_DENIED_MSG }, { status: 403 });
   const form = await req.formData();
   const file = form.get("file");
   if (!(file instanceof File)) return NextResponse.json({ error: "No file uploaded." }, { status: 400 });
