@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { requireUser } from "@/lib/auth";
 import { getUserAccess } from "@/lib/permissions";
+import { getUiPref } from "@/lib/uiPrefServer";
 import { prisma } from "@/lib/prisma";
 import { AppShell } from "@/components/AppShell";
 
@@ -21,10 +22,11 @@ const NAV_CAPABILITIES: Record<string, string> = {
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const user = await requireUser();
-  const access = await getUserAccess(user.userId);
+  const [access, uiPref] = await Promise.all([getUserAccess(user.userId), getUiPref()]);
 
-  // Factory-floor roles live in the simple app, not this one.
-  if (access.uiMode === "simple") redirect("/w");
+  // Factory-floor roles live in the simple app; anyone else lands here unless
+  // they've chosen the simple view for themselves from the burger menu.
+  if (access.uiMode === "simple" || uiPref === "simple") redirect("/w");
 
   const [needsPhotos, openActionItems] = await Promise.all([
     prisma.block.count({ where: { deletedAt: null, status: "NEEDS_PHOTOS" } }),

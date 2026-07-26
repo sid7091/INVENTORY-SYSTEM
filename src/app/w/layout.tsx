@@ -1,4 +1,6 @@
 import { requireUser } from "@/lib/auth";
+import { getUserAccess } from "@/lib/permissions";
+import { SwitchToFull } from "@/components/UiModeToggle";
 import { getLang } from "@/lib/i18nServer";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { WorkerSignOut } from "@/components/worker/WorkerSignOut";
@@ -9,8 +11,10 @@ import Link from "next/link";
 // tap targets. The language buttons are always visible (never hidden behind
 // a menu a worker would have to read to find).
 export default async function WorkerLayout({ children }: { children: React.ReactNode }) {
-  await requireUser();
-  const lang = await getLang();
+  const user = await requireUser();
+  const [lang, access] = await Promise.all([getLang(), getUserAccess(user.userId)]);
+  // Only roles that are actually allowed the management app get a way back.
+  const canUseFullApp = access.uiMode === "full";
 
   return (
     <div className="min-h-screen bg-cream-100">
@@ -22,6 +26,7 @@ export default async function WorkerLayout({ children }: { children: React.React
           </Link>
           <div className="ml-auto flex items-center gap-2">
             <LanguageSwitcher current={lang} />
+            {canUseFullApp && <SwitchToFull />}
             <WorkerSignOut />
           </div>
         </div>

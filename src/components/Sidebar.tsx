@@ -4,6 +4,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { useEffect } from "react";
 import { cn } from "@/lib/utils";
 import { BRAND } from "@/lib/brand";
+import { SwitchToSimple } from "@/components/UiModeToggle";
 
 interface NavItem {
   href: string;
@@ -120,7 +121,10 @@ export function Sidebar({
             <div className="truncate text-sm font-medium text-brown-800">{user.name}</div>
             <div className="truncate text-[11px] text-brown-400">{user.email} · {user.role}</div>
           </div>
-          <button onClick={logout} className="btn-secondary w-full text-xs">Sign out</button>
+          <div className="space-y-1.5">
+            <SwitchToSimple />
+            <button onClick={logout} className="btn-secondary w-full text-xs">Sign out</button>
+          </div>
         </div>
       </aside>
     </>
