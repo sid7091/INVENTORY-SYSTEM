@@ -1,0 +1,109 @@
+// Helios Slab Library — data model.
+// Every change to this file needs a new migration:  npx prisma migrate dev --name <what-changed>
+// Never edit an old migration in prisma/migrations/.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ---------------------------------------------------------------------------
+// People
+// ---------------------------------------------------------------------------
+
+// role:   admin | editor | viewer      (Helios team)
+//         architect | customer         (clients — see available slabs only)
+// status: active | pending | disabled  (pending = self-registered, waiting for an admin)
+model User {
+  id           String    @id @default(cuid())
+  email        String    @unique
+  name         String
+  passwordHash String
+  role         String    @default("viewer")
+  status       String    @default("active")
+  phone        String?
+  company      String? // architect's firm / customer's company
+  city         String?
+  note         String? // what the person told us when registering
+  createdAt    DateTime  @default(now())
+  approvedAt   DateTime?
+  lastLoginAt  DateTime?
+
+  selections Selection[]
+  slabs      Slab[]      @relation("SlabCreatedBy")
+
+  @@index([status])
+  @@index([role])
+}
+
+// ---------------------------------------------------------------------------
+// Slabs
+// ---------------------------------------------------------------------------
+
+model Slab {
+  id          String    @id @default(cuid())
+  name        String
+  material    String? // Title Case, e.g. Quartzite
+  color       String?
+  size        String // free text, e.g. "119 x 74"
+  quantity    String?
+  block       String // as typed, e.g. "29596 / HCS 593"
+  status      String    @default("available") // available | sold
+  soldAt      DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  createdById String?
+  createdBy   User?     @relation("SlabCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+
+  images     SlabImage[]
+  blockKeys  BlockKey[]
+  selections Selection[]
+
+  @@index([status])
+}
+
+// position 0 = cover (the plain slab photo); 1+ = renders.
+// slabId is empty for a moment between upload and saving the slab; uploads
+// that never get saved are cleaned up after a day.
+model SlabImage {
+  id        String   @id @default(cuid())
+  slabId    String?
+  slab      Slab?    @relation(fields: [slabId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+  path      String // full-size JPEG in storage (see src/lib/storage.ts)
+  thumbPath String? // small JPEG for cards
+  label     String?
+  position  Int    @default(0)
+  width     Int?
+  height    Int?
+
+  @@index([slabId, position])
+  @@index([createdAt])
+}
+
+// One row per normalised block number. The PRIMARY KEY is what makes
+// duplicates impossible, even when two people save at the same moment.
+// "29596 / HCS 593" -> keys "29596" and "hcs593". Rule: src/lib/blockKeys.ts
+model BlockKey {
+  key    String @id
+  slabId String
+  slab   Slab   @relation(fields: [slabId], references: [id], onDelete: Cascade)
+
+  @@index([slabId])
+}
+
+// Each person's ticked slabs (for the client PDF). Stored server-side so it
+// follows them across devices, and so admins can see what a client picked.
+model Selection {
+  userId    String
+  slabId    String
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  slab      Slab     @relation(fields: [slabId], references: [id], onDelete: Cascade)
+
+  @@id([userId, slabId])
+}
