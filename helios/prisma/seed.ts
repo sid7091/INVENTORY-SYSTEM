@@ -1,4 +1,6 @@
 // npm run db:seed
+// Also runs on every Vercel deploy (see "vercel-build"), so it must be safe to
+// repeat: it never changes an existing admin or adds demo slabs twice.
 // 1. Creates the first admin (SEED_ADMIN_EMAIL / SEED_ADMIN_PASSWORD) if missing.
 // 2. If the library is empty, adds 3 demo slabs (from the Chaitanya selection
 //    PDF) so there's something to look at. Set SEED_DEMO=false to skip.
@@ -29,11 +31,10 @@ const DEMO = [
 async function main() {
   const email = (process.env.SEED_ADMIN_EMAIL || "").toLowerCase().trim();
   const password = process.env.SEED_ADMIN_PASSWORD || "";
+  const existing = email ? await prisma.user.findUnique({ where: { email } }) : null;
   if (!email || password.length < 8) {
-    throw new Error("Set SEED_ADMIN_EMAIL and SEED_ADMIN_PASSWORD (8+ characters) in .env first.");
-  }
-  const existing = await prisma.user.findUnique({ where: { email } });
-  if (existing) {
+    console.warn("No first admin created: set SEED_ADMIN_EMAIL and SEED_ADMIN_PASSWORD (8+ characters).");
+  } else if (existing) {
     console.log(`Admin ${email} already exists — left unchanged.`);
   } else {
     await prisma.user.create({

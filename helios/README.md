@@ -39,15 +39,20 @@ npm run dev                 # http://localhost:3000
 
 ## Put it online (Vercel)
 
-1. Create a Postgres database (Neon, or Vercel → Storage → Postgres) and copy its connection string.
-2. On Vercel: **Add New → Project**, import `sid7091/INVENTORY-SYSTEM`, and set **Root Directory = `helios`**. Use a separate project from the Eagle Stone app.
-3. Open **Storage → Create → Blob** and connect it to the project. This adds `BLOB_READ_WRITE_TOKEN`.
-4. Under **Settings → Environment Variables**, add `DATABASE_URL` and `AUTH_SECRET`.
-5. Deploy. The build runs the database migrations automatically (`vercel-build`).
-6. From your computer, run the seed once against the live database: `DATABASE_URL=… SEED_ADMIN_EMAIL=… SEED_ADMIN_PASSWORD=… npm run db:seed`.
-7. Optionally add your own domain, such as `slabs.heliosstones.com`, under **Settings → Domains**.
+1. On Vercel, go to **Add New → Project** and import `sid7091/INVENTORY-SYSTEM`. Set **Root Directory = `helios`**. This must be a separate project from the Eagle Stone app.
+2. Under **Storage**, connect a **Neon** (Postgres) database and a **Blob** store to the project. They add `DATABASE_URL` and `BLOB_READ_WRITE_TOKEN` for you.
+3. Under **Settings → Environment Variables**, add these for all environments:
+   - `AUTH_SECRET`: any long random string
+   - `SEED_ADMIN_EMAIL` and `SEED_ADMIN_PASSWORD`: your first admin login
+4. Until this branch is merged, set **Settings → Git → Production Branch = `helios-new-inventory`**.
+5. Deploy, or redeploy. Every deploy:
+   - runs the database migrations;
+   - creates the first admin if it's missing;
+   - adds the 3 demo slabs if the library is empty.
 
-Every push to the deployed branch redeploys the site.
+   All of this is in `vercel-build`, and none of it overwrites existing data.
+
+Every push to the deployed branch redeploys the site. Add `SEED_DEMO=false` if you don't want the demo slabs.
 
 ## Move the 71 slabs from the Claude artifact
 
@@ -62,7 +67,6 @@ Every push to the deployed branch redeploys the site.
    - copies the `brand/` files (real logos, building photo) into `public/brand/`. Commit them afterwards.
 3. Check the summary. It lists anything imported but worth fixing: a slab with no size (VENATINO WHITE), a slab with no photos (Black Arabescato), and repeated names with different blocks (expected).
 
-Use `SEED_DEMO=false` when seeding the live site if you don't want the 3 demo slabs.
 
 ## Brand files (`public/brand/`)
 
