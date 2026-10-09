@@ -1,5 +1,7 @@
 # Eagle Stone Inventory — Phase 1
 
+> **Helios Slab Library** — the new Helios Stone slab website (team + architect/customer logins) lives in [`helios/`](./helios/README.md). It is a separate app with its own Vercel project (Root Directory `helios`).
+
 Block-level marble & stone inventory for **Eagle Stone**. A login-gated staff
 app built on **Next.js 15 (App Router) + TypeScript + Prisma**. Phase 1 is
 inventory only — no customer-facing features.

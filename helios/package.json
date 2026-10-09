@@ -1,0 +1,44 @@
+{
+  "name": "helios-slab-library",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Helios Stone \u2014 slab library for the sales team, architects and customers",
+  "scripts": {
+    "dev": "next dev",
+    "build": "prisma generate && next build",
+    "start": "next start",
+    "typecheck": "tsc --noEmit",
+    "postinstall": "prisma generate",
+    "db:push": "prisma db push",
+    "db:migrate": "prisma migrate deploy",
+    "db:seed": "tsx prisma/seed.ts",
+    "import": "tsx scripts/import-export.ts",
+    "vercel-build": "prisma generate && prisma migrate deploy && tsx prisma/seed.ts && next build"
+  },
+  "prisma": {
+    "seed": "tsx prisma/seed.ts"
+  },
+  "dependencies": {
+    "@prisma/client": "^6.19.3",
+    "@vercel/blob": "^2.8.1",
+    "bcryptjs": "^2.4.3",
+    "jose": "^5.10.0",
+    "jspdf": "^4.2.1",
+    "next": "^15.5.27",
+    "react": "^19.3.0",
+    "react-dom": "^19.3.0",
+    "server-only": "^0.0.1",
+    "zod": "^3.25.76"
+  },
+  "devDependencies": {
+    "@types/bcryptjs": "^2.4.6",
+    "@types/node": "^22.20.5",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "jszip": "^3.10.2",
+    "prisma": "^6.19.3",
+    "sharp": "^0.34.5",
+    "tsx": "^4.23.15",
+    "typescript": "^5.9.3"
+  }
+}
